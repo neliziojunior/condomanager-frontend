@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard';
 import Expenses from './pages/Expenses';
 import Units from './pages/Units';
 import Maintenance from './pages/Maintenance';
+import Packages from './pages/Packages';
+import Notices from './pages/Notices';
 import Layout from './components/Layout';
 
 export default function App() {
@@ -19,6 +21,8 @@ export default function App() {
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/units" element={<Units />} />
             <Route path="/maintenance" element={<Maintenance />} />
+            <Route path="/packages" element={<Packages />} />
+            <Route path="/notices" element={<Notices />} />
           </Route>
         </Routes>
       </BrowserRouter>
