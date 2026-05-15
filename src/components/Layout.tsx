@@ -5,12 +5,13 @@ import api from '../services/api';
 import { 
   AppBar, Toolbar, Typography, Drawer, List, ListItemButton, ListItemText, 
   ListItemIcon, Box, Button, IconButton, useMediaQuery, useTheme,
-  Badge, Tooltip, Popover
+  Badge, Tooltip, Popover, Collapse
 } from '@mui/material';
 import {
   Dashboard, AttachMoney, Apartment, Build, Inventory, Campaign, ExitToApp,
   ChevronLeft, ChevronRight, Menu as MenuIcon, Notifications, Warning,
-  Event, Description
+  Event, Description, ReportProblem, Search, SmartToy, HowToVote, Store, People, Chat,
+  ExpandMore, ExpandLess
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 240;
@@ -28,6 +29,9 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifications, setNotifications] = useState({ packages: 0, maintenance: 0, overdueExpenses: 0, total: 0 });
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    principal: true, financeiro: true, gestao: true, comunicacao: false
+  });
 
   const isExpanded = !collapsed || hoverExpand;
 
@@ -41,15 +45,54 @@ export default function Layout() {
     try { const { data } = await api.get('/notifications'); setNotifications(data); } catch (error) {}
   }
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-    { text: 'Despesas', icon: <AttachMoney />, path: '/expenses' },
-    { text: 'Unidades', icon: <Apartment />, path: '/units' },
-    { text: 'Manutenção', icon: <Build />, path: '/maintenance' },
-    { text: 'Encomendas', icon: <Inventory />, path: '/packages' },
-    { text: 'Avisos', icon: <Campaign />, path: '/notices' },
-    { text: 'Reservas', icon: <Event />, path: '/reservations' },
-    { text: 'Documentos', icon: <Description />, path: '/documents' },
+  const toggleGroup = (group: string) => {
+    setOpenGroups(prev => ({ ...prev, [group]: !prev[group] }));
+  };
+
+  const menuGroups = [
+    {
+      name: 'Principal',
+      key: 'principal',
+      icon: <Dashboard />,
+      items: [
+        { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
+      ]
+    },
+    {
+      name: 'Financeiro',
+      key: 'financeiro',
+      icon: <AttachMoney />,
+      items: [
+        { text: 'Despesas', icon: <AttachMoney />, path: '/expenses' },
+        { text: 'Documentos', icon: <Description />, path: '/documents' },
+      ]
+    },
+    {
+      name: 'Gestão',
+      key: 'gestao',
+      icon: <Apartment />,
+      items: [
+        { text: 'Unidades', icon: <Apartment />, path: '/units' },
+        { text: 'Encomendas', icon: <Inventory />, path: '/packages' },
+        { text: 'Manutenção', icon: <Build />, path: '/maintenance' },
+        { text: 'Reservas', icon: <Event />, path: '/reservations' },
+        { text: 'Visitantes', icon: <People />, path: '/visitors' },
+      ]
+    },
+    {
+      name: 'Comunicação',
+      key: 'comunicacao',
+      icon: <Campaign />,
+      items: [
+        { text: 'Avisos', icon: <Campaign />, path: '/notices' },
+        { text: 'Enquetes', icon: <HowToVote />, path: '/polls' },
+        { text: 'Classificados', icon: <Store />, path: '/listings' },
+        { text: 'Chat', icon: <Chat />, path: '/chat' },
+        { text: 'Ocorrências', icon: <ReportProblem />, path: '/occurrences' },
+        { text: 'Achados/Perdidos', icon: <Search />, path: '/lostfound' },
+        { text: 'Concierge IA', icon: <SmartToy />, path: '/chatbot' },
+      ]
+    },
   ];
 
   return (
@@ -61,19 +104,32 @@ export default function Layout() {
               <Box sx={{ bgcolor: '#6c5ce7', borderRadius: 1.5, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏢</Box>
               {isExpanded && <Typography sx={{ fontWeight: 700, fontSize: 13, color: 'white' }}>CondoManager</Typography>}
             </Box>
-            <List sx={{ flex: 1, px: 0.5, pt: 1 }}>
-              {menuItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <Tooltip key={item.path} title={!isExpanded ? item.text : ''} placement="right" arrow>
-                    <ListItemButton onClick={() => { navigate(item.path); if (isMobile) setMobileOpen(false); }}
-                      sx={{ borderRadius: 1.5, mb: 0.3, minHeight: 40, justifyContent: isExpanded ? 'initial' : 'center', px: isExpanded ? 1.5 : 1, bgcolor: isActive ? '#6c5ce7' : 'transparent', color: isActive ? 'white' : 'rgba(255,255,255,0.55)', '&:hover': { bgcolor: isActive ? '#5a4bd1' : 'rgba(108,92,231,0.12)', color: 'white' } }}>
-                      <ListItemIcon sx={{ minWidth: 0, mr: isExpanded ? 1.5 : 0, justifyContent: 'center', color: isActive ? 'white' : 'rgba(255,255,255,0.45)' }}>{item.icon}</ListItemIcon>
-                      {isExpanded && <ListItemText primary={item.text} primaryTypographyProps={{ fontSize: 12 }} />}
+            <List sx={{ flex: 1, px: 0.5, pt: 1, overflow: 'auto' }}>
+              {menuGroups.map((group) => (
+                <Box key={group.key}>
+                  {isExpanded && (
+                    <ListItemButton onClick={() => toggleGroup(group.key)} sx={{ borderRadius: 1.5, mb: 0.3, minHeight: 36, px: 1.5, color: 'rgba(255,255,255,0.4)', '&:hover': { color: 'white' } }}>
+                      <ListItemIcon sx={{ minWidth: 0, mr: 1.5, color: 'rgba(255,255,255,0.4)' }}>{group.icon}</ListItemIcon>
+                      <ListItemText primary={group.name} primaryTypographyProps={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }} />
+                      {openGroups[group.key] ? <ExpandLess sx={{ fontSize: 14 }} /> : <ExpandMore sx={{ fontSize: 14 }} />}
                     </ListItemButton>
-                  </Tooltip>
-                );
-              })}
+                  )}
+                  <Collapse in={!isExpanded || openGroups[group.key]}>
+                    {group.items.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Tooltip key={item.path} title={!isExpanded ? item.text : ''} placement="right" arrow>
+                          <ListItemButton onClick={() => { navigate(item.path); if (isMobile) setMobileOpen(false); }}
+                            sx={{ borderRadius: 1.5, mb: 0.3, minHeight: 38, justifyContent: isExpanded ? 'initial' : 'center', px: isExpanded ? 2.5 : 1, bgcolor: isActive ? '#6c5ce7' : 'transparent', color: isActive ? 'white' : 'rgba(255,255,255,0.55)', '&:hover': { bgcolor: isActive ? '#5a4bd1' : 'rgba(108,92,231,0.12)', color: 'white' } }}>
+                            <ListItemIcon sx={{ minWidth: 0, mr: isExpanded ? 1.5 : 0, justifyContent: 'center', color: isActive ? 'white' : 'rgba(255,255,255,0.45)' }}>{item.icon}</ListItemIcon>
+                            {isExpanded && <ListItemText primary={item.text} primaryTypographyProps={{ fontSize: 11 }} />}
+                          </ListItemButton>
+                        </Tooltip>
+                      );
+                    })}
+                  </Collapse>
+                </Box>
+              ))}
             </List>
             <Box sx={{ p: 1.5, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
               <Button fullWidth onClick={() => { logout(); navigate('/login'); }} startIcon={isExpanded ? <ExitToApp /> : undefined}
@@ -91,16 +147,13 @@ export default function Layout() {
             <Typography sx={{ fontWeight: 700, fontSize: 13, color: 'white' }}>CondoManager</Typography>
           </Box>
           <List sx={{ px: 0.5, pt: 1 }}>
-            {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <ListItemButton key={item.path} onClick={() => { navigate(item.path); setMobileOpen(false); }}
-                  sx={{ borderRadius: 1.5, mb: 0.3, minHeight: 40, px: 1.5, bgcolor: isActive ? '#6c5ce7' : 'transparent', color: isActive ? 'white' : 'rgba(255,255,255,0.55)' }}>
-                  <ListItemIcon sx={{ minWidth: 0, mr: 1.5, color: isActive ? 'white' : 'rgba(255,255,255,0.45)' }}>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} primaryTypographyProps={{ fontSize: 12 }} />
-                </ListItemButton>
-              );
-            })}
+            {menuGroups.map(group => group.items.map(item => (
+              <ListItemButton key={item.path} onClick={() => { navigate(item.path); setMobileOpen(false); }}
+                sx={{ borderRadius: 1.5, mb: 0.3, minHeight: 40, px: 1.5, bgcolor: location.pathname === item.path ? '#6c5ce7' : 'transparent', color: location.pathname === item.path ? 'white' : 'rgba(255,255,255,0.55)' }}>
+                <ListItemIcon sx={{ minWidth: 0, mr: 1.5, color: location.pathname === item.path ? 'white' : 'rgba(255,255,255,0.45)' }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} primaryTypographyProps={{ fontSize: 12 }} />
+              </ListItemButton>
+            )))}
           </List>
         </Drawer>
       )}
@@ -108,7 +161,7 @@ export default function Layout() {
         <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'white', borderBottom: '1px solid #e8eaed', zIndex: 1100 }}>
           <Toolbar sx={{ minHeight: 52, px: { xs: 1.5, md: 2.5 } }}>
             {isMobile && <IconButton onClick={() => setMobileOpen(true)} sx={{ mr: 1, color: '#6c5ce7' }}><MenuIcon /></IconButton>}
-            <Typography sx={{ flexGrow: 1, fontWeight: 600, fontSize: 15, color: '#1a1a2e' }}>{menuItems.find(m => m.path === location.pathname)?.text || 'Dashboard'}</Typography>
+            <Typography sx={{ flexGrow: 1, fontWeight: 600, fontSize: 15, color: '#1a1a2e' }}>Dashboard</Typography>
             <IconButton sx={{ mr: 1, color: '#636e72' }} size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
               <Badge badgeContent={notifications.total} color="error"><Notifications fontSize="small" /></Badge>
             </IconButton>

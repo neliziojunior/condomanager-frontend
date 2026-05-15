@@ -5,7 +5,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableRow, Box, Chip, IconButton, InputAdornment,
   Dialog, DialogTitle, DialogContent, DialogActions, Alert, Snackbar, Tooltip
 } from '@mui/material';
-import { Search, AttachFile, CheckCircle, PictureAsPdf } from '@mui/icons-material';
+import { Search, AttachFile, CheckCircle, PictureAsPdf, Download } from '@mui/icons-material';
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -17,7 +17,6 @@ export default function Expenses() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -32,16 +31,11 @@ export default function Expenses() {
         api.get('/condominium/me'),
         api.get('/expenses')
       ]);
-      
-      // Filtra apenas categorias de despesa
       const expenseCategories = condRes.data.categories.filter((c: any) => c.type === 'EXPENSE');
       setCategories(expenseCategories);
       setExpenses(expRes.data);
-      
-      console.log('Categorias carregadas:', expenseCategories); // Debug
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      setSnackbar({ open: true, message: 'Erro ao carregar dados', severity: 'error' });
     }
   }
 
@@ -50,44 +44,21 @@ export default function Expenses() {
     try {
       const { data } = await api.post('/expenses/suggest-category', { description });
       setAiSuggestion(data);
-      // Se a IA sugerir, já seleciona automaticamente
-      if (data.suggestion?.categoryId) {
-        setCategoryId(data.suggestion.categoryId);
-      }
-    } catch (error) {
-      console.error('Erro IA:', error);
-    }
+      if (data.suggestion?.categoryId) setCategoryId(data.suggestion.categoryId);
+    } catch (error) {}
   }
 
   async function createExpense(e: React.FormEvent) {
     e.preventDefault();
-    
-    // Validação
-    if (!categoryId) {
-      setSnackbar({ open: true, message: 'Selecione uma categoria!', severity: 'error' });
-      return;
-    }
-
+    if (!categoryId) { setSnackbar({ open: true, message: 'Selecione uma categoria!', severity: 'error' }); return; }
     try {
-      await api.post('/expenses', { 
-        description, 
-        amount: Number(amount), 
-        dueDate, 
-        categoryId 
-      });
-      
-      setSnackbar({ open: true, message: 'Despesa criada com sucesso!', severity: 'success' });
-      setDescription(''); 
-      setAmount(''); 
-      setDueDate(''); 
-      setCategoryId(''); 
-      setAiSuggestion(null);
+      await api.post('/expenses', { description, amount: Number(amount), dueDate, categoryId });
+      setSnackbar({ open: true, message: 'Despesa criada!', severity: 'success' });
+      setDescription(''); setAmount(''); setDueDate(''); setCategoryId(''); setAiSuggestion(null);
       setShowForm(false);
       loadData();
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || 'Erro ao criar despesa';
-      setSnackbar({ open: true, message: errorMsg, severity: 'error' });
-      console.error('Erro completo:', error.response?.data);
+      setSnackbar({ open: true, message: error.response?.data?.message || 'Erro', severity: 'error' });
     }
   }
 
@@ -98,7 +69,7 @@ export default function Expenses() {
       setSnackbar({ open: true, message: 'Comprovante anexado!', severity: 'success' });
       loadData();
     } catch (error) {
-      setSnackbar({ open: true, message: 'Erro ao anexar arquivo', severity: 'error' });
+      setSnackbar({ open: true, message: 'Erro ao anexar', severity: 'error' });
     } finally {
       setUploadingId(null);
     }
@@ -106,13 +77,11 @@ export default function Expenses() {
 
   async function markAsPaid(expenseId: string) {
     try {
-      await api.post(`/expenses/${expenseId}/mark-paid`, { 
-        paymentDate: new Date().toISOString() 
-      });
-      setSnackbar({ open: true, message: 'Despesa marcada como paga!', severity: 'success' });
+      await api.post(`/expenses/${expenseId}/mark-paid`, { paymentDate: new Date().toISOString() });
+      setSnackbar({ open: true, message: 'Marcada como paga!', severity: 'success' });
       loadData();
     } catch (error) {
-      setSnackbar({ open: true, message: 'Erro ao atualizar status', severity: 'error' });
+      setSnackbar({ open: true, message: 'Erro', severity: 'error' });
     }
   }
 
@@ -126,50 +95,40 @@ export default function Expenses() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">💰 Despesas</Typography>
-        <Button variant="contained" onClick={() => {
-          setShowForm(true);
-          if (categories.length === 0) loadData(); // Recarrega se vazio
-        }}>
-          ➕ Nova Despesa
-        </Button>
+        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18 }}>💰 Despesas</Typography>
+        <Box>
+          <Button variant="outlined" size="small" startIcon={<Download />} onClick={() => window.open('http://localhost:3333/expenses/report/pdf', '_blank')} sx={{ mr: 1 }}>
+            PDF
+          </Button>
+          <Button variant="contained" size="small" onClick={() => setShowForm(true)}>+ Nova Despesa</Button>
+        </Box>
       </Box>
 
-      {/* Filtros */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <Card sx={{ mb: 3, borderRadius: 2 }}>
+        <CardContent sx={{ p: 2 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>
-              <TextField 
-                fullWidth 
-                placeholder="Buscar despesas..." 
-                value={searchTerm}
+              <TextField fullWidth size="small" placeholder="Buscar despesas..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start"><Search /></InputAdornment>
-                }}
-              />
+                InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }} />
             </Grid>
             <Grid item xs={12} md={3}>
-              <Select fullWidth value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                <MenuItem value="ALL">Todos os status</MenuItem>
+              <Select fullWidth size="small" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                <MenuItem value="ALL">Todos</MenuItem>
                 <MenuItem value="PENDING">Pendentes</MenuItem>
                 <MenuItem value="PAID">Pagas</MenuItem>
                 <MenuItem value="OVERDUE">Vencidas</MenuItem>
               </Select>
             </Grid>
             <Grid item xs={12} md={3}>
-              <Typography variant="body2" color="textSecondary">
-                {filteredExpenses.length} despesa(s)
-              </Typography>
+              <Typography variant="caption" color="textSecondary">{filteredExpenses.length} despesa(s)</Typography>
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      {/* Tabela */}
-      <Card>
-        <Table>
+      <Card sx={{ borderRadius: 2 }}>
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Descrição</TableCell>
@@ -185,16 +144,10 @@ export default function Expenses() {
             {filteredExpenses.map(exp => (
               <TableRow key={exp.id} hover>
                 <TableCell>
-                  <Typography variant="body2" fontWeight="bold">{exp.description}</Typography>
+                  <Typography variant="body2" fontWeight={600} fontSize={12}>{exp.description}</Typography>
                   {exp.documentUrl && (
-                    <Button 
-                      size="small" 
-                      href={`http://localhost:3333${exp.documentUrl}`} 
-                      target="_blank"
-                      startIcon={<PictureAsPdf />}
-                      sx={{ mt: 0.5 }}
-                    >
-                      Ver comprovante
+                    <Button size="small" href={`http://localhost:3333${exp.documentUrl}`} target="_blank" startIcon={<PictureAsPdf />} sx={{ mt: 0.5, fontSize: 10 }}>
+                      Ver
                     </Button>
                   )}
                 </TableCell>
@@ -203,40 +156,22 @@ export default function Expenses() {
                 <TableCell>{new Date(exp.dueDate).toLocaleDateString('pt-BR')}</TableCell>
                 <TableCell>
                   <Tooltip title="Anexar comprovante">
-                    <IconButton 
-                      size="small" 
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingId === exp.id}
-                    >
-                      <AttachFile color={exp.documentUrl ? 'success' : 'action'} />
+                    <IconButton size="small" onClick={() => fileInputRef.current?.click()} disabled={uploadingId === exp.id}>
+                      <AttachFile fontSize="small" color={exp.documentUrl ? 'success' : 'action'} />
                     </IconButton>
                   </Tooltip>
-                  <input 
-                    type="file" 
-                    hidden 
-                    ref={fileInputRef}
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleFileUpload(exp.id, file);
-                        e.target.value = '';
-                      }
-                    }}
-                  />
+                  <input type="file" hidden ref={fileInputRef} accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={(e) => { const file = e.target.files?.[0]; if (file) { handleFileUpload(exp.id, file); e.target.value = ''; } }} />
                 </TableCell>
                 <TableCell>
-                  <Chip 
-                    label={exp.status === 'PAID' ? 'Pago' : exp.status === 'OVERDUE' ? 'Vencido' : 'Pendente'}
-                    color={exp.status === 'PAID' ? 'success' : exp.status === 'OVERDUE' ? 'error' : 'warning'}
-                    size="small"
-                  />
+                  <Chip label={exp.status === 'PAID' ? 'Pago' : exp.status === 'OVERDUE' ? 'Vencido' : 'Pendente'}
+                    color={exp.status === 'PAID' ? 'success' : exp.status === 'OVERDUE' ? 'error' : 'warning'} size="small" sx={{ fontSize: 11 }} />
                 </TableCell>
                 <TableCell>
                   {exp.status !== 'PAID' && (
                     <Tooltip title="Marcar como pago">
                       <IconButton size="small" color="success" onClick={() => markAsPaid(exp.id)}>
-                        <CheckCircle />
+                        <CheckCircle fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   )}
@@ -244,117 +179,51 @@ export default function Expenses() {
               </TableRow>
             ))}
             {filteredExpenses.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  <Typography color="textSecondary" sx={{ py: 4 }}>
-                    {searchTerm ? 'Nenhuma despesa encontrada' : 'Nenhuma despesa cadastrada'}
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <TableRow><TableCell colSpan={7} align="center"><Typography color="textSecondary" sx={{ py: 4 }}>Nenhuma despesa</Typography></TableCell></TableRow>
             )}
           </TableBody>
         </Table>
       </Card>
 
-      {/* Modal Nova Despesa */}
       <Dialog open={showForm} onClose={() => setShowForm(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Nova Despesa</DialogTitle>
+        <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>Nova Despesa</DialogTitle>
         <form onSubmit={createExpense}>
           <DialogContent>
             <Grid container spacing={2}>
               <Grid item xs={12}>
-                <TextField 
-                  fullWidth 
-                  label="Descrição" 
-                  value={description} 
-                  onChange={e => setDescription(e.target.value)} 
-                  required 
-                  autoFocus
-                />
-                <Button 
-                  onClick={suggestCategory} 
-                  sx={{ mt: 1 }} 
-                  variant="outlined" 
-                  size="small" 
-                  color="secondary"
-                  disabled={!description}
-                >
-                  🤖 Sugerir Categoria com IA
+                <TextField fullWidth label="Descrição" size="small" value={description} onChange={e => setDescription(e.target.value)} required autoFocus />
+                <Button onClick={suggestCategory} sx={{ mt: 1 }} variant="outlined" size="small" color="secondary" disabled={!description}>
+                  🤖 Sugerir Categoria
                 </Button>
                 {aiSuggestion?.suggestion && (
                   <Alert severity="info" sx={{ mt: 1 }}>
-                    IA sugere: <strong>{categories.find(c => c.id === aiSuggestion.suggestion.categoryId)?.name}</strong> 
-                    ({(aiSuggestion.suggestion.confidence * 100).toFixed(0)}% de confiança)
+                    IA: <strong>{categories.find(c => c.id === aiSuggestion.suggestion.categoryId)?.name}</strong> ({(aiSuggestion.suggestion.confidence * 100).toFixed(0)}%)
                   </Alert>
                 )}
               </Grid>
               <Grid item xs={6}>
-                <TextField 
-                  fullWidth 
-                  label="Valor R$" 
-                  type="number" 
-                  value={amount} 
-                  onChange={e => setAmount(e.target.value)} 
-                  required 
-                  inputProps={{ step: "0.01", min: "0" }}
-                />
+                <TextField fullWidth label="Valor R$" type="number" size="small" value={amount} onChange={e => setAmount(e.target.value)} required inputProps={{ step: "0.01", min: "0" }} />
               </Grid>
               <Grid item xs={6}>
-                <TextField 
-                  fullWidth 
-                  label="Vencimento" 
-                  type="date" 
-                  value={dueDate} 
-                  onChange={e => setDueDate(e.target.value)} 
-                  InputLabelProps={{ shrink: true }} 
-                  required 
-                />
+                <TextField fullWidth label="Vencimento" type="date" size="small" value={dueDate} onChange={e => setDueDate(e.target.value)} required InputLabelProps={{ shrink: true }} />
               </Grid>
               <Grid item xs={12}>
-                <Select 
-                  fullWidth 
-                  value={categoryId} 
-                  onChange={e => setCategoryId(e.target.value)} 
-                  displayEmpty 
-                  required
-                >
-                  <MenuItem value="" disabled>
-                    <em>Selecione a categoria</em>
-                  </MenuItem>
-                  {categories.map(c => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.icon} {c.name}
-                    </MenuItem>
-                  ))}
+                <Select fullWidth size="small" value={categoryId} onChange={e => setCategoryId(e.target.value)} displayEmpty required>
+                  <MenuItem value="" disabled>Selecione a categoria</MenuItem>
+                  {categories.map(c => <MenuItem key={c.id} value={c.id}>{c.icon} {c.name}</MenuItem>)}
                 </Select>
-                {categories.length === 0 && (
-                  <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-                    ⚠️ Nenhuma categoria encontrada. Verifique se o condomínio foi criado.
-                  </Typography>
-                )}
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button 
-              type="submit" 
-              variant="contained" 
-              disabled={!categoryId || !description || !amount || !dueDate}
-            >
-              Salvar Despesa
-            </Button>
+            <Button onClick={() => setShowForm(false)} size="small">Cancelar</Button>
+            <Button type="submit" variant="contained" size="small" disabled={!categoryId || !description || !amount || !dueDate}>Salvar</Button>
           </DialogActions>
         </form>
       </Dialog>
 
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000} 
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        message={snackbar.message}
-      />
+      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} message={snackbar.message}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} />
     </Box>
   );
 }
