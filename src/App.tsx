@@ -7,6 +7,8 @@ import Units from './pages/Units';
 import Maintenance from './pages/Maintenance';
 import Packages from './pages/Packages';
 import Notices from './pages/Notices';
+import Reservations from './pages/Reservations';
+import Documents from './pages/Documents';
 import Layout from './components/Layout';
 
 export default function App() {
@@ -23,6 +25,8 @@ export default function App() {
             <Route path="/maintenance" element={<Maintenance />} />
             <Route path="/packages" element={<Packages />} />
             <Route path="/notices" element={<Notices />} />
+            <Route path="/reservations" element={<Reservations />} />
+            <Route path="/documents" element={<Documents />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -5,11 +5,12 @@ import api from '../services/api';
 import { 
   AppBar, Toolbar, Typography, Drawer, List, ListItemButton, ListItemText, 
   ListItemIcon, Box, Button, IconButton, useMediaQuery, useTheme,
-  Avatar, Badge, Tooltip, Popover
+  Badge, Tooltip, Popover
 } from '@mui/material';
 import {
   Dashboard, AttachMoney, Apartment, Build, Inventory, Campaign, ExitToApp,
-  ChevronLeft, ChevronRight, Menu as MenuIcon, Notifications, Warning
+  ChevronLeft, ChevronRight, Menu as MenuIcon, Notifications, Warning,
+  Event, Description
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 240;
@@ -37,10 +38,7 @@ export default function Layout() {
   }, []);
 
   async function loadNotifications() {
-    try {
-      const { data } = await api.get('/notifications');
-      setNotifications(data);
-    } catch (error) {}
+    try { const { data } = await api.get('/notifications'); setNotifications(data); } catch (error) {}
   }
 
   const menuItems = [
@@ -50,6 +48,8 @@ export default function Layout() {
     { text: 'Manutenção', icon: <Build />, path: '/maintenance' },
     { text: 'Encomendas', icon: <Inventory />, path: '/packages' },
     { text: 'Avisos', icon: <Campaign />, path: '/notices' },
+    { text: 'Reservas', icon: <Event />, path: '/reservations' },
+    { text: 'Documentos', icon: <Description />, path: '/documents' },
   ];
 
   return (
