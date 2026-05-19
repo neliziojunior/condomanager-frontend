@@ -3,9 +3,10 @@ import api, { uploadFile } from '../services/api';
 import { 
   Typography, Card, CardContent, Grid, TextField, Button, Select, MenuItem, 
   Table, TableBody, TableCell, TableHead, TableRow, Box, Chip, IconButton, InputAdornment,
-  Dialog, DialogTitle, DialogContent, DialogActions, Alert, Snackbar, Tooltip
+  Dialog, DialogTitle, DialogContent, DialogActions, Alert, Snackbar, Tooltip,
+  Checkbox, FormControlLabel
 } from '@mui/material';
-import { Search, AttachFile, CheckCircle, PictureAsPdf, Download, Edit, Delete } from '@mui/icons-material'; // ✅ NOVO: Edit, Delete
+import { Search, AttachFile, CheckCircle, PictureAsPdf, Download, Edit, Delete, AutoAwesome } from '@mui/icons-material';
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -16,9 +17,12 @@ export default function Expenses() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // ✅ NOVO: Estado para edição
   const [editingId, setEditingId] = useState<string | null>(null);
+  
+  // ✅ NOVO: Estados para notas fiscais da IA
+  const [showInvoices, setShowInvoices] = useState(false);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [selectedInvoices, setSelectedInvoices] = useState<number[]>([]);
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -51,7 +55,41 @@ export default function Expenses() {
     } catch (error) {}
   }
 
-  // ✅ NOVO: Função para abrir modal de edição
+  // ✅ NOVO: Buscar notas fiscais da IA
+  async function fetchInvoices() {
+    try {
+      const { data } = await api.get('/expenses/fetch-invoices');
+      setInvoices(data.invoices);
+      setSelectedInvoices(data.invoices.map((_: any, i: number) => i)); // Seleciona todas por padrão
+      setShowInvoices(true);
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Erro ao buscar notas. Cadastre o CNPJ do condomínio.', severity: 'error' });
+    }
+  }
+
+  // ✅ NOVO: Importar notas selecionadas
+  async function importInvoices() {
+    const toImport = selectedInvoices.map(i => invoices[i]).filter(inv => inv.categoryId);
+    if (toImport.length === 0) {
+      setSnackbar({ open: true, message: 'Nenhuma nota selecionada com categoria válida', severity: 'warning' });
+      return;
+    }
+    try {
+      await api.post('/expenses/import-invoices', { invoices: toImport });
+      setSnackbar({ open: true, message: `${toImport.length} nota(s) importada(s) com sucesso!`, severity: 'success' });
+      setShowInvoices(false);
+      loadData();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Erro ao importar notas', severity: 'error' });
+    }
+  }
+
+  function toggleInvoice(index: number) {
+    setSelectedInvoices(prev => 
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
+  }
+
   function openEditModal(exp: any) {
     setEditingId(exp.id);
     setDescription(exp.description);
@@ -61,7 +99,6 @@ export default function Expenses() {
     setShowForm(true);
   }
 
-  // ✅ NOVO: Função para fechar modal (limpa estado de edição)
   function closeModal() {
     setShowForm(false);
     setEditingId(null);
@@ -77,11 +114,9 @@ export default function Expenses() {
     if (!categoryId) { setSnackbar({ open: true, message: 'Selecione uma categoria!', severity: 'error' }); return; }
     try {
       if (editingId) {
-        // ✅ NOVO: Atualizar despesa existente
         await api.put(`/expenses/${editingId}`, { description, amount: Number(amount), dueDate, categoryId });
         setSnackbar({ open: true, message: 'Despesa atualizada!', severity: 'success' });
       } else {
-        // Criar nova despesa
         await api.post('/expenses', { description, amount: Number(amount), dueDate, categoryId });
         setSnackbar({ open: true, message: 'Despesa criada!', severity: 'success' });
       }
@@ -92,7 +127,6 @@ export default function Expenses() {
     }
   }
 
-  // ✅ NOVO: Função para excluir despesa
   async function deleteExpense(id: string) {
     if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
     try {
@@ -136,10 +170,14 @@ export default function Expenses() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18 }}>💰 Despesas</Typography>
-        <Box>
-          <Button variant="outlined" size="small" startIcon={<Download />} onClick={() => window.open('http://localhost:3333/expenses/report/pdf', '_blank')} sx={{ mr: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {/* ✅ NOVO: Botão Buscar Notas */}
+          <Button variant="outlined" size="small" startIcon={<AutoAwesome />} onClick={fetchInvoices} color="secondary">
+            🔍 Buscar Notas
+          </Button>
+          <Button variant="outlined" size="small" startIcon={<Download />} onClick={() => window.open('http://localhost:3333/expenses/report/pdf', '_blank')}>
             PDF
           </Button>
           <Button variant="contained" size="small" onClick={() => { setEditingId(null); setShowForm(true); }}>+ Nova Despesa</Button>
@@ -215,13 +253,11 @@ export default function Expenses() {
                       </IconButton>
                     </Tooltip>
                   )}
-                  {/* ✅ NOVO: Botão Editar */}
                   <Tooltip title="Editar">
                     <IconButton size="small" color="primary" onClick={() => openEditModal(exp)}>
                       <Edit fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  {/* ✅ NOVO: Botão Excluir */}
                   <Tooltip title="Excluir">
                     <IconButton size="small" color="error" onClick={() => deleteExpense(exp.id)}>
                       <Delete fontSize="small" />
@@ -237,10 +273,59 @@ export default function Expenses() {
         </Table>
       </Card>
 
-      {/* Modal (criação/edição) */}
+      {/* ✅ NOVO: Modal de Notas Fiscais da IA */}
+      <Dialog open={showInvoices} onClose={() => setShowInvoices(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          🤖 Notas Fiscais Encontradas pela IA
+        </DialogTitle>
+        <DialogContent>
+          {invoices.length === 0 ? (
+            <Typography color="textSecondary" sx={{ py: 4, textAlign: 'center' }}>
+              Nenhuma nota encontrada. Verifique o CNPJ do condomínio.
+            </Typography>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell padding="checkbox">✓</TableCell>
+                  <TableCell>Descrição</TableCell>
+                  <TableCell>Categoria</TableCell>
+                  <TableCell>Valor</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {invoices.map((inv, i) => (
+                  <TableRow key={i} sx={{ bgcolor: selectedInvoices.includes(i) ? '#F0FDF9' : 'transparent' }}>
+                    <TableCell padding="checkbox">
+                      <Checkbox checked={selectedInvoices.includes(i)} onChange={() => toggleInvoice(i)} />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>{inv.description}</Typography>
+                      <Typography variant="caption" color="textSecondary">{inv.source}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={inv.categoryName} size="small" color={inv.categoryId ? 'primary' : 'default'} />
+                      {!inv.categoryId && <Typography variant="caption" color="error" display="block">Sem categoria</Typography>}
+                    </TableCell>
+                    <TableCell>R$ {inv.amount.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowInvoices(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={importInvoices} disabled={selectedInvoices.length === 0} startIcon={<AutoAwesome />}>
+            Importar {selectedInvoices.length} Nota(s)
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de criação/edição */}
       <Dialog open={showForm} onClose={closeModal} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>
-          {editingId ? '✏️ Editar Despesa' : '💰 Nova Despesa'} {/* ✅ NOVO: Título dinâmico */}
+          {editingId ? '✏️ Editar Despesa' : '💰 Nova Despesa'}
         </DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
@@ -273,7 +358,7 @@ export default function Expenses() {
           <DialogActions>
             <Button onClick={closeModal} size="small">Cancelar</Button>
             <Button type="submit" variant="contained" size="small" disabled={!categoryId || !description || !amount || !dueDate}>
-              {editingId ? 'Atualizar' : 'Salvar'} {/* ✅ NOVO: Texto dinâmico */}
+              {editingId ? 'Atualizar' : 'Salvar'}
             </Button>
           </DialogActions>
         </form>

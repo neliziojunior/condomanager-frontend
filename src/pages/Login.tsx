@@ -30,7 +30,7 @@ export default function Login() {
       <Card sx={{ maxWidth: 400, width: '100%', mx: 2 }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h4" textAlign="center" gutterBottom>
-            🏢 CondoManager
+            🏢 CondoPro
           </Typography>
           <Typography variant="body2" textAlign="center" color="textSecondary" mb={3}>
             Gestão Inteligente de Condomínios
