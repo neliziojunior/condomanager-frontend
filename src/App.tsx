@@ -15,7 +15,8 @@ import Chatbot from './pages/Chatbot';
 import Polls from './pages/Polls';
 import Listings from './pages/Listings';
 import Visitors from './pages/Visitors';
-import Chat from './pages/Chat'; // ✅ NOVO
+import Chat from './pages/Chat';
+import Accounting from './pages/Accounting'; // ✅ NOVO: Accounting
 import Layout from './components/Layout';
 
 export default function App() {
@@ -40,7 +41,8 @@ export default function App() {
             <Route path="/polls" element={<Polls />} />
             <Route path="/listings" element={<Listings />} />
             <Route path="/visitors" element={<Visitors />} />
-            <Route path="/chat" element={<Chat />} /> {/* ✅ NOVO */}
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/accounting" element={<Accounting />} /> {/* ✅ NOVO: Accounting */}
           </Route>
         </Routes>
       </BrowserRouter>

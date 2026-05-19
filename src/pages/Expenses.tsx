@@ -5,7 +5,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableRow, Box, Chip, IconButton, InputAdornment,
   Dialog, DialogTitle, DialogContent, DialogActions, Alert, Snackbar, Tooltip
 } from '@mui/material';
-import { Search, AttachFile, CheckCircle, PictureAsPdf, Download } from '@mui/icons-material';
+import { Search, AttachFile, CheckCircle, PictureAsPdf, Download, Edit, Delete } from '@mui/icons-material'; // ✅ NOVO: Edit, Delete
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -16,6 +16,9 @@ export default function Expenses() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ✅ NOVO: Estado para edição
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -48,17 +51,56 @@ export default function Expenses() {
     } catch (error) {}
   }
 
-  async function createExpense(e: React.FormEvent) {
+  // ✅ NOVO: Função para abrir modal de edição
+  function openEditModal(exp: any) {
+    setEditingId(exp.id);
+    setDescription(exp.description);
+    setAmount(exp.amount.toString());
+    setDueDate(new Date(exp.dueDate).toISOString().split('T')[0]);
+    setCategoryId(exp.categoryId || '');
+    setShowForm(true);
+  }
+
+  // ✅ NOVO: Função para fechar modal (limpa estado de edição)
+  function closeModal() {
+    setShowForm(false);
+    setEditingId(null);
+    setDescription('');
+    setAmount('');
+    setDueDate('');
+    setCategoryId('');
+    setAiSuggestion(null);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!categoryId) { setSnackbar({ open: true, message: 'Selecione uma categoria!', severity: 'error' }); return; }
     try {
-      await api.post('/expenses', { description, amount: Number(amount), dueDate, categoryId });
-      setSnackbar({ open: true, message: 'Despesa criada!', severity: 'success' });
-      setDescription(''); setAmount(''); setDueDate(''); setCategoryId(''); setAiSuggestion(null);
-      setShowForm(false);
+      if (editingId) {
+        // ✅ NOVO: Atualizar despesa existente
+        await api.put(`/expenses/${editingId}`, { description, amount: Number(amount), dueDate, categoryId });
+        setSnackbar({ open: true, message: 'Despesa atualizada!', severity: 'success' });
+      } else {
+        // Criar nova despesa
+        await api.post('/expenses', { description, amount: Number(amount), dueDate, categoryId });
+        setSnackbar({ open: true, message: 'Despesa criada!', severity: 'success' });
+      }
+      closeModal();
       loadData();
     } catch (error: any) {
       setSnackbar({ open: true, message: error.response?.data?.message || 'Erro', severity: 'error' });
+    }
+  }
+
+  // ✅ NOVO: Função para excluir despesa
+  async function deleteExpense(id: string) {
+    if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
+    try {
+      await api.delete(`/expenses/${id}`);
+      setSnackbar({ open: true, message: 'Despesa excluída!', severity: 'success' });
+      loadData();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Erro ao excluir', severity: 'error' });
     }
   }
 
@@ -100,7 +142,7 @@ export default function Expenses() {
           <Button variant="outlined" size="small" startIcon={<Download />} onClick={() => window.open('http://localhost:3333/expenses/report/pdf', '_blank')} sx={{ mr: 1 }}>
             PDF
           </Button>
-          <Button variant="contained" size="small" onClick={() => setShowForm(true)}>+ Nova Despesa</Button>
+          <Button variant="contained" size="small" onClick={() => { setEditingId(null); setShowForm(true); }}>+ Nova Despesa</Button>
         </Box>
       </Box>
 
@@ -146,9 +188,7 @@ export default function Expenses() {
                 <TableCell>
                   <Typography variant="body2" fontWeight={600} fontSize={12}>{exp.description}</Typography>
                   {exp.documentUrl && (
-                    <Button size="small" href={`http://localhost:3333${exp.documentUrl}`} target="_blank" startIcon={<PictureAsPdf />} sx={{ mt: 0.5, fontSize: 10 }}>
-                      Ver
-                    </Button>
+                    <Button size="small" href={`http://localhost:3333${exp.documentUrl}`} target="_blank" startIcon={<PictureAsPdf />} sx={{ mt: 0.5, fontSize: 10 }}>Ver</Button>
                   )}
                 </TableCell>
                 <TableCell>{exp.category?.name || '-'}</TableCell>
@@ -175,6 +215,18 @@ export default function Expenses() {
                       </IconButton>
                     </Tooltip>
                   )}
+                  {/* ✅ NOVO: Botão Editar */}
+                  <Tooltip title="Editar">
+                    <IconButton size="small" color="primary" onClick={() => openEditModal(exp)}>
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  {/* ✅ NOVO: Botão Excluir */}
+                  <Tooltip title="Excluir">
+                    <IconButton size="small" color="error" onClick={() => deleteExpense(exp.id)}>
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}
@@ -185,9 +237,12 @@ export default function Expenses() {
         </Table>
       </Card>
 
-      <Dialog open={showForm} onClose={() => setShowForm(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>Nova Despesa</DialogTitle>
-        <form onSubmit={createExpense}>
+      {/* Modal (criação/edição) */}
+      <Dialog open={showForm} onClose={closeModal} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>
+          {editingId ? '✏️ Editar Despesa' : '💰 Nova Despesa'} {/* ✅ NOVO: Título dinâmico */}
+        </DialogTitle>
+        <form onSubmit={handleSubmit}>
           <DialogContent>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -216,8 +271,10 @@ export default function Expenses() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setShowForm(false)} size="small">Cancelar</Button>
-            <Button type="submit" variant="contained" size="small" disabled={!categoryId || !description || !amount || !dueDate}>Salvar</Button>
+            <Button onClick={closeModal} size="small">Cancelar</Button>
+            <Button type="submit" variant="contained" size="small" disabled={!categoryId || !description || !amount || !dueDate}>
+              {editingId ? 'Atualizar' : 'Salvar'} {/* ✅ NOVO: Texto dinâmico */}
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
