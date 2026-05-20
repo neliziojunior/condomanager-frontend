@@ -18,7 +18,9 @@ import Visitors from './pages/Visitors';
 import Chat from './pages/Chat';
 import Accounting from './pages/Accounting';
 import Signatures from './pages/Signatures';
-import Inventory from './pages/Inventory'; // ✅ NOVO: Inventory
+import Inventory from './pages/Inventory';
+import Assemblies from './pages/Assemblies';
+import Payments from './pages/Payments'; // ✅ NOVO: Payments
 import Layout from './components/Layout';
 
 export default function App() {
@@ -46,7 +48,9 @@ export default function App() {
             <Route path="/chat" element={<Chat />} />
             <Route path="/accounting" element={<Accounting />} />
             <Route path="/signatures" element={<Signatures />} />
-            <Route path="/inventory" element={<Inventory />} /> {/* ✅ NOVO: Inventory */}
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/assemblies" element={<Assemblies />} />
+            <Route path="/payments" element={<Payments />} /> {/* ✅ NOVO: Payments */}
           </Route>
         </Routes>
       </BrowserRouter>

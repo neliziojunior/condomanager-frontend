@@ -2,13 +2,13 @@ import { createTheme } from '@mui/material';
 
 export const theme = createTheme({
   palette: {
-    primary: { main: '#00A896' },      // Verde água (CondoConta)
-    secondary: { main: '#028090' },    // Verde escuro
-    success: { main: '#02C39A' },      // Verde claro
-    warning: { main: '#F0A500' },      // Âmbar
-    error: { main: '#E63946' },        // Vermelho suave
-    background: { default: '#F7F9FC', paper: '#FFFFFF' },  // Cinza claro + branco
-    text: { primary: '#1A1A2E', secondary: '#6B7280' },    // Texto escuro + cinza
+    primary: { main: '#00A896' },
+    secondary: { main: '#028090' },
+    success: { main: '#02C39A' },
+    warning: { main: '#F0A500' },
+    error: { main: '#E63946' },
+    background: { default: '#F7F9FC', paper: '#FFFFFF' },
+    text: { primary: '#1A1A2E', secondary: '#6B7280' },
   },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", sans-serif',
@@ -30,10 +30,5 @@ export const theme = createTheme({
         root: { textTransform: 'none', fontWeight: 600, borderRadius: 10, padding: '8px 20px' }
       }
     },
-    MuiChip: {
-      styleOverrides: {
-        root: { borderRadius: 8, fontWeight: 500 }
-      }
-    }
   }
 });

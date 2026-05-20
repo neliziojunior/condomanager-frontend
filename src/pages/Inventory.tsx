@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Typography, Card, CardContent, Grid, TextField, Button, Select, MenuItem, Box, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Table, TableBody, TableCell, TableHead, TableRow, LinearProgress } from '@mui/material';
-import { Add, Delete, Edit, Warning, Inventory as InventoryIcon } from '@mui/icons-material';
+import { Typography, Card, CardContent, Grid, TextField, Button, Select, MenuItem, Box, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Table, TableBody, TableCell, TableHead, TableRow, LinearProgress, IconButton } from '@mui/material';
+import { Add, Delete, Edit, Warning } from '@mui/icons-material';
 
 export default function Inventory() {
   const [items, setItems] = useState<any[]>([]);
@@ -65,16 +65,11 @@ export default function Inventory() {
       <Box display="flex" justifyContent="space-between" mb={3}>
         <Box>
           <Typography variant="h6" fontWeight={700}>📦 Estoque</Typography>
-          <Typography variant="caption" color="textSecondary">
-            {lowStock.length} item(ns) com estoque baixo
-          </Typography>
+          <Typography variant="caption" color="textSecondary">{lowStock.length} item(ns) com estoque baixo</Typography>
         </Box>
-        <Button variant="contained" size="small" startIcon={<Add />} onClick={() => { setEditingId(null); setShowForm(true); }}>
-          Novo Item
-        </Button>
+        <Button variant="contained" size="small" startIcon={<Add />} onClick={() => { setEditingId(null); setShowForm(true); }}>Novo Item</Button>
       </Box>
 
-      {/* Alertas de estoque baixo */}
       {lowStock.length > 0 && (
         <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid #F0A500' }}>
           <CardContent>
@@ -92,39 +87,21 @@ export default function Inventory() {
         <CardContent sx={{ p: 2 }}>
           <Select fullWidth size="small" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} displayEmpty>
             <MenuItem value="">Todas categorias</MenuItem>
-            <MenuItem value="LIMPEZA">Limpeza</MenuItem>
-            <MenuItem value="MANUTENCAO">Manutenção</MenuItem>
-            <MenuItem value="ESCRITORIO">Escritório</MenuItem>
-            <MenuItem value="JARDINAGEM">Jardinagem</MenuItem>
-            <MenuItem value="OUTROS">Outros</MenuItem>
+            <MenuItem value="LIMPEZA">Limpeza</MenuItem><MenuItem value="MANUTENCAO">Manutenção</MenuItem><MenuItem value="ESCRITORIO">Escritório</MenuItem><MenuItem value="JARDINAGEM">Jardinagem</MenuItem><MenuItem value="OUTROS">Outros</MenuItem>
           </Select>
         </CardContent>
       </Card>
 
       <Card sx={{ borderRadius: 2 }}>
         <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Item</TableCell><TableCell>Categoria</TableCell><TableCell>Qtd</TableCell><TableCell>Estoque</TableCell><TableCell>Valor</TableCell><TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHead>
+          <TableHead><TableRow><TableCell>Item</TableCell><TableCell>Categoria</TableCell><TableCell>Qtd</TableCell><TableCell>Estoque</TableCell><TableCell>Valor</TableCell><TableCell>Ações</TableCell></TableRow></TableHead>
           <TableBody>
             {items.map(item => (
               <TableRow key={item.id} sx={{ bgcolor: item.quantity <= item.minQuantity ? '#FFF5F5' : 'transparent' }}>
-                <TableCell>
-                  <Typography variant="body2" fontWeight={600}>{item.name}</Typography>
-                  <Typography variant="caption" color="textSecondary">{item.supplier || ''}</Typography>
-                </TableCell>
+                <TableCell><Typography variant="body2" fontWeight={600}>{item.name}</Typography><Typography variant="caption" color="textSecondary">{item.supplier || ''}</Typography></TableCell>
                 <TableCell><Chip label={item.category} size="small" /></TableCell>
                 <TableCell>{item.quantity} {item.unit}</TableCell>
-                <TableCell>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={Math.min((item.quantity / item.minQuantity) * 100, 100)} 
-                    sx={{ height: 6, borderRadius: 3, width: 80 }}
-                    color={item.quantity <= item.minQuantity ? 'error' : 'success'}
-                  />
-                </TableCell>
+                <TableCell><LinearProgress variant="determinate" value={Math.min((item.quantity / item.minQuantity) * 100, 100)} sx={{ height: 6, borderRadius: 3, width: 80 }} color={item.quantity <= item.minQuantity ? 'error' : 'success'} /></TableCell>
                 <TableCell>{item.price ? `R$ ${item.price.toFixed(2)}` : '-'}</TableCell>
                 <TableCell>
                   <IconButton size="small" onClick={() => openEdit(item)}><Edit fontSize="small" /></IconButton>
@@ -142,11 +119,7 @@ export default function Inventory() {
           <DialogContent>
             <Grid container spacing={2}>
               <Grid item xs={8}><TextField fullWidth label="Nome" size="small" value={name} onChange={e => setName(e.target.value)} required /></Grid>
-              <Grid item xs={4}>
-                <Select fullWidth size="small" value={category} onChange={e => setCategory(e.target.value)}>
-                  <MenuItem value="LIMPEZA">Limpeza</MenuItem><MenuItem value="MANUTENCAO">Manutenção</MenuItem><MenuItem value="ESCRITORIO">Escritório</MenuItem><MenuItem value="JARDINAGEM">Jardinagem</MenuItem><MenuItem value="OUTROS">Outros</MenuItem>
-                </Select>
-              </Grid>
+              <Grid item xs={4}><Select fullWidth size="small" value={category} onChange={e => setCategory(e.target.value)}><MenuItem value="LIMPEZA">Limpeza</MenuItem><MenuItem value="MANUTENCAO">Manutenção</MenuItem><MenuItem value="ESCRITORIO">Escritório</MenuItem><MenuItem value="JARDINAGEM">Jardinagem</MenuItem><MenuItem value="OUTROS">Outros</MenuItem></Select></Grid>
               <Grid item xs={4}><TextField fullWidth label="Quantidade" type="number" size="small" value={quantity} onChange={e => setQuantity(e.target.value)} required /></Grid>
               <Grid item xs={4}><TextField fullWidth label="Mínimo" type="number" size="small" value={minQuantity} onChange={e => setMinQuantity(e.target.value)} /></Grid>
               <Grid item xs={4}><TextField fullWidth label="Unidade" size="small" value={unit} onChange={e => setUnit(e.target.value)} /></Grid>
@@ -154,10 +127,7 @@ export default function Inventory() {
               <Grid item xs={6}><TextField fullWidth label="Fornecedor" size="small" value={supplier} onChange={e => setSupplier(e.target.value)} /></Grid>
             </Grid>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button type="submit" variant="contained">{editingId ? 'Atualizar' : 'Salvar'}</Button>
-          </DialogActions>
+          <DialogActions><Button onClick={() => setShowForm(false)}>Cancelar</Button><Button type="submit" variant="contained">{editingId ? 'Atualizar' : 'Salvar'}</Button></DialogActions>
         </form>
       </Dialog>
 

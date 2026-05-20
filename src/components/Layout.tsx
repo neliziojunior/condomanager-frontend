@@ -13,7 +13,7 @@ import {
   Menu as MenuIcon, Notifications, Warning,
   Event, Description, ReportProblem, Search, SmartToy, HowToVote, Store, People, Chat,
   AccountBalance, Draw, Inventory as InventoryIcon, Home, MoreHoriz,
-  AdminPanelSettings, Person, Security
+  AdminPanelSettings, Person, Security, Pix // ✅ NOVO: Pix
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -41,11 +41,11 @@ export default function Layout() {
     try { const { data } = await api.get('/notifications'); setNotifications(data); } catch (error) {}
   }
 
-  // ✅ NOVO: Menus separados por perfil
   const menuByProfile = {
     syndic: [
       { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', category: 'principal' },
       { text: 'Despesas', icon: <AttachMoney />, path: '/expenses', category: 'financeiro' },
+      { text: 'Cobranças', icon: <Pix />, path: '/payments', category: 'financeiro' }, // ✅ NOVO: Cobranças
       { text: 'Contabilidade', icon: <AccountBalance />, path: '/accounting', category: 'financeiro' },
       { text: 'Estoque', icon: <InventoryIcon />, path: '/inventory', category: 'operacional' },
       { text: 'Unidades', icon: <Apartment />, path: '/units', category: 'operacional' },
@@ -53,6 +53,7 @@ export default function Layout() {
       { text: 'Encomendas', icon: <Inventory />, path: '/packages', category: 'operacional' },
       { text: 'Visitantes', icon: <People />, path: '/visitors', category: 'seguranca' },
       { text: 'Reservas', icon: <Event />, path: '/reservations', category: 'social' },
+      { text: 'Assembleias', icon: <HowToVote />, path: '/assemblies', category: 'social' },
       { text: 'Avisos', icon: <Campaign />, path: '/notices', category: 'social' },
       { text: 'Enquetes', icon: <HowToVote />, path: '/polls', category: 'social' },
       { text: 'Classificados', icon: <Store />, path: '/listings', category: 'social' },
@@ -65,6 +66,7 @@ export default function Layout() {
     ],
     resident: [
       { text: 'Início', icon: <Home />, path: '/dashboard', category: 'principal' },
+      { text: 'Assembleias', icon: <HowToVote />, path: '/assemblies', category: 'principal' },
       { text: 'Reservas', icon: <Event />, path: '/reservations', category: 'principal' },
       { text: 'Avisos', icon: <Campaign />, path: '/notices', category: 'principal' },
       { text: 'Chat', icon: <Chat />, path: '/chat', category: 'principal' },
@@ -82,7 +84,6 @@ export default function Layout() {
   const currentMenu = menuByProfile[userProfile];
   const categories = [...new Set(currentMenu.map(i => i.category))];
 
-  // Mobile bottom tabs (principais)
   const mainMobileItems = [
     { text: 'Início', icon: <Home />, path: '/dashboard' },
     { text: 'Despesas', icon: <AttachMoney />, path: '/expenses' },
@@ -100,24 +101,14 @@ export default function Layout() {
           <Typography sx={{ fontSize: 10, color: '#00A896', fontWeight: 600, letterSpacing: 0.5 }}>GESTÃO PROFISSIONAL</Typography>
         </Box>
       </Box>
-
-      {/* ✅ NOVO: Seletor de perfil */}
       <Box sx={{ px: 2, pb: 1 }}>
-        <Tabs 
-          value={userProfile} 
-          onChange={(_, v) => setUserProfile(v)} 
-          variant="fullWidth"
-          sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, fontSize: 11, textTransform: 'none' } }}
-        >
+        <Tabs value={userProfile} onChange={(_, v) => setUserProfile(v)} variant="fullWidth" sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, fontSize: 11, textTransform: 'none' } }}>
           <Tab icon={<AdminPanelSettings sx={{ fontSize: 18 }} />} label="Síndico" value="syndic" />
           <Tab icon={<Person sx={{ fontSize: 18 }} />} label="Morador" value="resident" />
           <Tab icon={<Security sx={{ fontSize: 18 }} />} label="Portaria" value="doorman" />
         </Tabs>
       </Box>
-
       <Divider sx={{ borderColor: '#F0F0F0' }} />
-
-      {/* Menu agrupado por categoria */}
       <List sx={{ flex: 1, px: 1.5, pt: 1, overflow: 'auto' }}>
         {categories.map(cat => {
           const catItems = currentMenu.filter(i => i.category === cat);
@@ -142,7 +133,6 @@ export default function Layout() {
           );
         })}
       </List>
-
       <Box sx={{ p: 2, borderTop: '1px solid #F0F0F0' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, p: 1.5, bgcolor: '#F7F9FC', borderRadius: 2 }}>
           <Avatar sx={{ bgcolor: '#00A896', width: 36, height: 36, fontSize: 15, fontWeight: 600 }}>S</Avatar>
@@ -173,17 +163,11 @@ export default function Layout() {
             <Typography sx={{ flexGrow: 1, fontWeight: 600, fontSize: 15, color: '#1A1A2E' }}>
               {currentMenu.find(m => m.path === location.pathname)?.text || 'Dashboard'}
             </Typography>
-            <Chip 
-              label={userProfile === 'syndic' ? '👔 Síndico' : userProfile === 'resident' ? '👤 Morador' : '🔑 Portaria'} 
-              size="small" 
-              sx={{ mr: 1, bgcolor: '#F0FDF9', color: '#00A896', fontWeight: 600, fontSize: 11 }} 
-            />
+            <Chip label={userProfile === 'syndic' ? '👔 Síndico' : userProfile === 'resident' ? '👤 Morador' : '🔑 Portaria'} size="small" sx={{ mr: 1, bgcolor: '#F0FDF9', color: '#00A896', fontWeight: 600, fontSize: 11 }} />
             <IconButton sx={{ color: '#6B7280' }} size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
               <Badge badgeContent={notifications.total} color="error"><Notifications fontSize="small" /></Badge>
             </IconButton>
-            <Popover open={Boolean(anchorEl)} anchorEl={anchorEl} onClose={() => setAnchorEl(null)} 
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              PaperProps={{ sx: { borderRadius: 3, mt: 1, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' } }}>
+            <Popover open={Boolean(anchorEl)} anchorEl={anchorEl} onClose={() => setAnchorEl(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} PaperProps={{ sx: { borderRadius: 3, mt: 1, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' } }}>
               <Box sx={{ p: 2.5, minWidth: 260 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, fontSize: 14 }}>🔔 Notificações</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1 }}><Inventory fontSize="small" sx={{ color: '#F0A500' }} /><Typography variant="caption">{notifications.packages} encomenda(s) pendente(s)</Typography></Box>
