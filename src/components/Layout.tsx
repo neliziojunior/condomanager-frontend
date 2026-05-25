@@ -13,7 +13,7 @@ import {
   Menu as MenuIcon, Notifications, Warning,
   Event, Description, ReportProblem, Search, SmartToy, HowToVote, Store, People, Chat,
   AccountBalance, Draw, Inventory as InventoryIcon, Home, MoreHoriz,
-  AdminPanelSettings, Person, Security, Pix // ✅ NOVO: Pix
+  AdminPanelSettings, Person, Security
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -29,7 +29,7 @@ export default function Layout() {
   const [notifications, setNotifications] = useState({ packages: 0, maintenance: 0, overdueExpenses: 0, total: 0 });
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [bottomTab, setBottomTab] = useState(0);
-  const [userProfile, setUserProfile] = useState<'syndic' | 'resident' | 'doorman'>('syndic');
+  const [userProfile, setUserProfile] = useState<'admin' | 'resident' | 'staff'>('admin');
 
   useEffect(() => {
     loadNotifications();
@@ -42,10 +42,10 @@ export default function Layout() {
   }
 
   const menuByProfile = {
-    syndic: [
+    admin: [
       { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', category: 'principal' },
       { text: 'Despesas', icon: <AttachMoney />, path: '/expenses', category: 'financeiro' },
-      { text: 'Cobranças', icon: <Pix />, path: '/payments', category: 'financeiro' }, // ✅ NOVO: Cobranças
+      { text: 'Cobranças', icon: <AttachMoney />, path: '/payments', category: 'financeiro' },
       { text: 'Contabilidade', icon: <AccountBalance />, path: '/accounting', category: 'financeiro' },
       { text: 'Estoque', icon: <InventoryIcon />, path: '/inventory', category: 'operacional' },
       { text: 'Unidades', icon: <Apartment />, path: '/units', category: 'operacional' },
@@ -74,7 +74,7 @@ export default function Layout() {
       { text: 'Ocorrências', icon: <ReportProblem />, path: '/occurrences', category: 'principal' },
       { text: 'Documentos', icon: <Description />, path: '/documents', category: 'principal' },
     ],
-    doorman: [
+    staff: [
       { text: 'Visitantes', icon: <People />, path: '/visitors', category: 'principal' },
       { text: 'Encomendas', icon: <Inventory />, path: '/packages', category: 'principal' },
       { text: 'QR Code', icon: <Search />, path: '/visitors', category: 'principal' },
@@ -103,9 +103,9 @@ export default function Layout() {
       </Box>
       <Box sx={{ px: 2, pb: 1 }}>
         <Tabs value={userProfile} onChange={(_, v) => setUserProfile(v)} variant="fullWidth" sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, fontSize: 11, textTransform: 'none' } }}>
-          <Tab icon={<AdminPanelSettings sx={{ fontSize: 18 }} />} label="Síndico" value="syndic" />
-          <Tab icon={<Person sx={{ fontSize: 18 }} />} label="Morador" value="resident" />
-          <Tab icon={<Security sx={{ fontSize: 18 }} />} label="Portaria" value="doorman" />
+          <Tab icon={<AdminPanelSettings sx={{ fontSize: 18 }} />} label="Administradores" value="admin" />
+          <Tab icon={<Person sx={{ fontSize: 18 }} />} label="Condôminos" value="resident" />
+          <Tab icon={<Security sx={{ fontSize: 18 }} />} label="Colaboradores" value="staff" />
         </Tabs>
       </Box>
       <Divider sx={{ borderColor: '#F0F0F0' }} />
@@ -163,7 +163,7 @@ export default function Layout() {
             <Typography sx={{ flexGrow: 1, fontWeight: 600, fontSize: 15, color: '#1A1A2E' }}>
               {currentMenu.find(m => m.path === location.pathname)?.text || 'Dashboard'}
             </Typography>
-            <Chip label={userProfile === 'syndic' ? '👔 Síndico' : userProfile === 'resident' ? '👤 Morador' : '🔑 Portaria'} size="small" sx={{ mr: 1, bgcolor: '#F0FDF9', color: '#00A896', fontWeight: 600, fontSize: 11 }} />
+            <Chip label={userProfile === 'admin' ? '👔 Admin' : userProfile === 'resident' ? '👤 Condômino' : '🔑 Colaborador'} size="small" sx={{ mr: 1, bgcolor: '#F0FDF9', color: '#00A896', fontWeight: 600, fontSize: 11 }} />
             <IconButton sx={{ color: '#6B7280' }} size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
               <Badge badgeContent={notifications.total} color="error"><Notifications fontSize="small" /></Badge>
             </IconButton>
