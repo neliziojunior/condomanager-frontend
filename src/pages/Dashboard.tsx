@@ -19,7 +19,7 @@ export default function Dashboard() {
   const [condominium, setCondominium] = useState<any>(null);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [condoScore, setCondoScore] = useState<any>(null);
-  const [predictions, setPredictions] = useState<any>(null); // ✅ NOVO: IA Preditiva
+  const [predictions, setPredictions] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'executive' | 'tactical' | 'operational'>('executive');
   const { token } = useAuth();
@@ -37,12 +37,12 @@ export default function Dashboard() {
         api.get('/condominium/me'),
         api.get('/expenses'),
         api.get('/condoscore'),
-        api.get('/condoai/predictions') // ✅ NOVO
+        api.get('/condoai/predictions')
       ]);
       setCondominium(condRes.data);
       setExpenses(expRes.data);
       setCondoScore(scoreRes.data);
-      setPredictions(predRes.data); // ✅ NOVO
+      setPredictions(predRes.data);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -111,22 +111,22 @@ export default function Dashboard() {
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <Typography variant="caption" color="textSecondary">💰 Financeiro</Typography>
-                    <LinearProgress variant="determinate" value={condoScore.details.financeiro} sx={{ height: 8, borderRadius: 4, mb: 1, bgcolor: '#F0F0F0', '& .MuiLinearProgress-bar': { bgcolor: '#00A896', borderRadius: 4 } }} />
+                    <LinearProgress variant="determinate" value={condoScore.details.financeiro} sx={{ height: 8, borderRadius: 4, mb: 1 }} />
                     <Typography variant="caption">{condoScore.details.financeiro}/40</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="caption" color="textSecondary">🔧 Manutenção</Typography>
-                    <LinearProgress variant="determinate" value={condoScore.details.manutencao} sx={{ height: 8, borderRadius: 4, mb: 1, bgcolor: '#F0F0F0', '& .MuiLinearProgress-bar': { bgcolor: '#F0A500', borderRadius: 4 } }} />
+                    <LinearProgress variant="determinate" value={condoScore.details.manutencao} sx={{ height: 8, borderRadius: 4, mb: 1 }} />
                     <Typography variant="caption">{condoScore.details.manutencao}/25</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="caption" color="textSecondary">👥 Participação</Typography>
-                    <LinearProgress variant="determinate" value={condoScore.details.social} sx={{ height: 8, borderRadius: 4, mb: 1, bgcolor: '#F0F0F0', '& .MuiLinearProgress-bar': { bgcolor: '#6C5CE7', borderRadius: 4 } }} />
+                    <LinearProgress variant="determinate" value={condoScore.details.social} sx={{ height: 8, borderRadius: 4, mb: 1 }} />
                     <Typography variant="caption">{condoScore.details.social}/20</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="caption" color="textSecondary">⚖️ Compliance</Typography>
-                    <LinearProgress variant="determinate" value={condoScore.details.compliance} sx={{ height: 8, borderRadius: 4, mb: 1, bgcolor: '#F0F0F0', '& .MuiLinearProgress-bar': { bgcolor: '#02C39A', borderRadius: 4 } }} />
+                    <LinearProgress variant="determinate" value={condoScore.details.compliance} sx={{ height: 8, borderRadius: 4, mb: 1 }} />
                     <Typography variant="caption">{condoScore.details.compliance}/15</Typography>
                   </Grid>
                 </Grid>
@@ -169,18 +169,10 @@ export default function Dashboard() {
 
       {/* KPIs */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} md={3}>
-          <KpiCard title="Saldo em Caixa" value="R$ 4.150" trend={12} icon={<AttachMoney sx={{ color: '#00A896' }} />} color="#00A896" subtitle="Disponível" />
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <KpiCard title="Pendentes" value={pendingExpenses.length} trend={-2} icon={<Warning sx={{ color: '#F0A500' }} />} color="#F0A500" subtitle="A pagar" />
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <KpiCard title="Pagas" value={paidExpenses.length} icon={<CheckCircle sx={{ color: '#02C39A' }} />} color="#02C39A" subtitle="Este mês" />
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <KpiCard title="Unidades" value={condominium?.units?.length || 0} icon={<Apartment sx={{ color: '#6C5CE7' }} />} color="#6C5CE7" subtitle="Total" />
-        </Grid>
+        <Grid item xs={6} md={3}><KpiCard title="Saldo" value="R$ 4.150" trend={12} icon={<AttachMoney sx={{ color: '#00A896' }} />} color="#00A896" subtitle="Disponível" /></Grid>
+        <Grid item xs={6} md={3}><KpiCard title="Pendentes" value={pendingExpenses.length} icon={<Warning sx={{ color: '#F0A500' }} />} color="#F0A500" subtitle="A pagar" /></Grid>
+        <Grid item xs={6} md={3}><KpiCard title="Pagas" value={paidExpenses.length} icon={<CheckCircle sx={{ color: '#02C39A' }} />} color="#02C39A" subtitle="Este mês" /></Grid>
+        <Grid item xs={6} md={3}><KpiCard title="Unidades" value={condominium?.units?.length || 0} icon={<Apartment sx={{ color: '#6C5CE7' }} />} color="#6C5CE7" subtitle="Total" /></Grid>
       </Grid>
 
       {/* Transparência */}
@@ -190,12 +182,9 @@ export default function Dashboard() {
             <Visibility sx={{ color: '#00A896' }} />
             <Typography variant="h6" sx={{ fontWeight: 600 }}>📢 Transparência</Typography>
           </Box>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Este painel é visível para todos os condôminos e colaboradores. A gestão é transparente!
-          </Alert>
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
-              <Typography variant="body2" fontWeight={600}>💰 Total de Despesas do Mês:</Typography>
+              <Typography variant="body2" fontWeight={600}>💰 Total de Despesas:</Typography>
               <Typography variant="h6" color="primary">R$ {totalExpenses.toFixed(2)}</Typography>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -211,7 +200,7 @@ export default function Dashboard() {
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2, fontSize: 15, fontWeight: 600 }}>📋 Últimas Despesas</Typography>
           {expenses.slice(0, 5).map(exp => (
-            <Box key={exp.id} sx={{ display: 'flex', justifyContent: 'space-between', py: 1.2, borderBottom: '1px solid #F0F0F0', '&:last-child': { borderBottom: 'none' } }}>
+            <Box key={exp.id} sx={{ display: 'flex', justifyContent: 'space-between', py: 1.2, borderBottom: '1px solid #F0F0F0' }}>
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{exp.description}</Typography>
                 <Typography variant="caption" color="textSecondary">{exp.category?.name} • {new Date(exp.dueDate).toLocaleDateString('pt-BR')}</Typography>

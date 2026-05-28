@@ -6,20 +6,20 @@ import {
   AppBar, Toolbar, Typography, Drawer, List, ListItemButton, ListItemText, 
   ListItemIcon, Box, Button, IconButton, useMediaQuery, useTheme,
   Badge, Popover, Avatar, Divider, BottomNavigation, BottomNavigationAction,
-  Paper, Tabs, Tab, Chip
+  Paper, Chip
 } from '@mui/material';
 import {
   Dashboard, AttachMoney, Apartment, Build, Inventory, Campaign, ExitToApp,
   Menu as MenuIcon, Notifications, Warning,
   Event, Description, ReportProblem, Search, SmartToy, HowToVote, Store, People, Chat,
   AccountBalance, Draw, Inventory as InventoryIcon, Home, MoreHoriz,
-  AdminPanelSettings, Person, Security
+  Visibility, Payments
 } from '@mui/icons-material';
 
-const DRAWER_WIDTH = 260;
+const DRAWER_WIDTH = 280;
 
 export default function Layout() {
-  const { logout } = useAuth();
+  const { logout, role } = useAuth(); // ✅ USA ROLE DO TOKEN
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -29,7 +29,14 @@ export default function Layout() {
   const [notifications, setNotifications] = useState({ packages: 0, maintenance: 0, overdueExpenses: 0, total: 0 });
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [bottomTab, setBottomTab] = useState(0);
-  const [userProfile, setUserProfile] = useState<'admin' | 'resident' | 'staff'>('admin');
+
+  // ✅ MAPEAMENTO DE ROLE PARA PERFIL
+  const getProfile = (r: string | null): 'admin' | 'resident' | 'staff' => {
+    if (r === 'SYNDIC' || r === 'ADMIN') return 'admin';
+    if (r === 'RESIDENT' || r === 'OWNER') return 'resident';
+    return 'staff';
+  };
+  const userProfile = getProfile(role);
 
   useEffect(() => {
     loadNotifications();
@@ -43,41 +50,47 @@ export default function Layout() {
 
   const menuByProfile = {
     admin: [
-      { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', category: 'principal' },
+      { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', category: 'gestao' },
+      { text: 'Unidades', icon: <Apartment />, path: '/units', category: 'gestao' },
+      { text: 'Manutenção', icon: <Build />, path: '/maintenance', category: 'gestao' },
+      { text: 'Estoque', icon: <InventoryIcon />, path: '/inventory', category: 'gestao' },
       { text: 'Despesas', icon: <AttachMoney />, path: '/expenses', category: 'financeiro' },
-      { text: 'Cobranças', icon: <AttachMoney />, path: '/payments', category: 'financeiro' },
+      { text: 'Cobranças', icon: <Payments />, path: '/payments', category: 'financeiro' },
       { text: 'Contabilidade', icon: <AccountBalance />, path: '/accounting', category: 'financeiro' },
-      { text: 'Estoque', icon: <InventoryIcon />, path: '/inventory', category: 'operacional' },
-      { text: 'Unidades', icon: <Apartment />, path: '/units', category: 'operacional' },
-      { text: 'Manutenção', icon: <Build />, path: '/maintenance', category: 'operacional' },
-      { text: 'Encomendas', icon: <Inventory />, path: '/packages', category: 'operacional' },
-      { text: 'Visitantes', icon: <People />, path: '/visitors', category: 'seguranca' },
-      { text: 'Reservas', icon: <Event />, path: '/reservations', category: 'social' },
       { text: 'Assembleias', icon: <HowToVote />, path: '/assemblies', category: 'social' },
       { text: 'Avisos', icon: <Campaign />, path: '/notices', category: 'social' },
       { text: 'Enquetes', icon: <HowToVote />, path: '/polls', category: 'social' },
-      { text: 'Classificados', icon: <Store />, path: '/listings', category: 'social' },
-      { text: 'Chat', icon: <Chat />, path: '/chat', category: 'social' },
       { text: 'Ocorrências', icon: <ReportProblem />, path: '/occurrences', category: 'social' },
-      { text: 'Achados/Perdidos', icon: <Search />, path: '/lostfound', category: 'social' },
+      { text: 'Chat', icon: <Chat />, path: '/chat', category: 'social' },
       { text: 'Documentos', icon: <Description />, path: '/documents', category: 'documentos' },
       { text: 'Assinatura Digital', icon: <Draw />, path: '/signatures', category: 'documentos' },
       { text: 'Concierge IA', icon: <SmartToy />, path: '/chatbot', category: 'outros' },
     ],
     resident: [
-      { text: 'Início', icon: <Home />, path: '/dashboard', category: 'principal' },
-      { text: 'Assembleias', icon: <HowToVote />, path: '/assemblies', category: 'principal' },
-      { text: 'Reservas', icon: <Event />, path: '/reservations', category: 'principal' },
-      { text: 'Avisos', icon: <Campaign />, path: '/notices', category: 'principal' },
-      { text: 'Chat', icon: <Chat />, path: '/chat', category: 'principal' },
-      { text: 'Classificados', icon: <Store />, path: '/listings', category: 'principal' },
-      { text: 'Ocorrências', icon: <ReportProblem />, path: '/occurrences', category: 'principal' },
-      { text: 'Documentos', icon: <Description />, path: '/documents', category: 'principal' },
+      { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', category: 'principal' },
+      { text: 'Financeiro', icon: <Visibility />, path: '/expenses', category: 'principal' },
+      { text: 'Reservas', icon: <Event />, path: '/reservations', category: 'conveniencia' },
+      { text: 'Encomendas', icon: <Inventory />, path: '/packages', category: 'conveniencia' },
+      { text: 'Visitantes/QR', icon: <People />, path: '/visitors', category: 'conveniencia' },
+      { text: 'Classificados', icon: <Store />, path: '/listings', category: 'conveniencia' },
+      { text: 'Assembleias', icon: <HowToVote />, path: '/assemblies', category: 'social' },
+      { text: 'Avisos', icon: <Campaign />, path: '/notices', category: 'social' },
+      { text: 'Enquetes', icon: <HowToVote />, path: '/polls', category: 'social' },
+      { text: 'Chat', icon: <Chat />, path: '/chat', category: 'social' },
+      { text: 'Ocorrências', icon: <ReportProblem />, path: '/occurrences', category: 'social' },
+      { text: 'Achados/Perdidos', icon: <Search />, path: '/lostfound', category: 'social' },
+      { text: 'Documentos', icon: <Description />, path: '/documents', category: 'documentos' },
+      { text: 'Assinatura', icon: <Draw />, path: '/signatures', category: 'documentos' },
+      { text: 'Concierge IA', icon: <SmartToy />, path: '/chatbot', category: 'outros' },
     ],
     staff: [
-      { text: 'Visitantes', icon: <People />, path: '/visitors', category: 'principal' },
+      { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', category: 'principal' },
       { text: 'Encomendas', icon: <Inventory />, path: '/packages', category: 'principal' },
-      { text: 'QR Code', icon: <Search />, path: '/visitors', category: 'principal' },
+      { text: 'Visitantes/QR', icon: <People />, path: '/visitors', category: 'principal' },
+      { text: 'Manutenção', icon: <Build />, path: '/maintenance', category: 'principal' },
+      { text: 'Estoque', icon: <InventoryIcon />, path: '/inventory', category: 'principal' },
+      { text: 'Achados/Perdidos', icon: <Search />, path: '/lostfound', category: 'principal' },
+      { text: 'Chat', icon: <Chat />, path: '/chat', category: 'principal' },
     ],
   };
 
@@ -101,14 +114,9 @@ export default function Layout() {
           <Typography sx={{ fontSize: 10, color: '#00A896', fontWeight: 600, letterSpacing: 0.5 }}>GESTÃO PROFISSIONAL</Typography>
         </Box>
       </Box>
-      <Box sx={{ px: 2, pb: 1 }}>
-        <Tabs value={userProfile} onChange={(_, v) => setUserProfile(v)} variant="fullWidth" sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, fontSize: 11, textTransform: 'none' } }}>
-          <Tab icon={<AdminPanelSettings sx={{ fontSize: 18 }} />} label="Administradores" value="admin" />
-          <Tab icon={<Person sx={{ fontSize: 18 }} />} label="Condôminos" value="resident" />
-          <Tab icon={<Security sx={{ fontSize: 18 }} />} label="Colaboradores" value="staff" />
-        </Tabs>
-      </Box>
+      
       <Divider sx={{ borderColor: '#F0F0F0' }} />
+      
       <List sx={{ flex: 1, px: 1.5, pt: 1, overflow: 'auto' }}>
         {categories.map(cat => {
           const catItems = currentMenu.filter(i => i.category === cat);
@@ -116,13 +124,13 @@ export default function Layout() {
           return (
             <Box key={cat}>
               <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#9CA3AF', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
-                {cat === 'principal' ? '⭐ Principal' : cat === 'financeiro' ? '💰 Financeiro' : cat === 'operacional' ? '🔧 Operacional' : cat === 'seguranca' ? '🔒 Segurança' : cat === 'social' ? '👥 Social' : cat === 'documentos' ? '📄 Documentos' : '📦 Outros'}
+                {cat === 'gestao' ? '📊 Gestão' : cat === 'financeiro' ? '💰 Financeiro' : cat === 'principal' ? '⭐ Principal' : cat === 'conveniencia' ? '🏠 Conveniência' : cat === 'social' ? '👥 Social' : cat === 'documentos' ? '📄 Documentos' : '📦 Outros'}
               </Typography>
               {catItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <ListItemButton key={item.path} onClick={() => { navigate(item.path); if (isMobile) setMobileOpen(false); }}
-                    sx={{ borderRadius: 2, mb: 0.2, minHeight: 40, px: 2, bgcolor: isActive ? '#F0FDF9' : 'transparent', color: isActive ? '#00A896' : '#374151', '&:hover': { bgcolor: isActive ? '#F0FDF9' : '#F7F9FC', color: '#00A896' } }}>
+                    sx={{ borderRadius: 2, mb: 0.2, minHeight: 42, px: 2, bgcolor: isActive ? '#F0FDF9' : 'transparent', color: isActive ? '#00A896' : '#374151', '&:hover': { bgcolor: isActive ? '#F0FDF9' : '#F7F9FC', color: '#00A896' } }}>
                     <ListItemIcon sx={{ minWidth: 0, mr: 2, color: isActive ? '#00A896' : '#6B7280' }}>{item.icon}</ListItemIcon>
                     <ListItemText primary={item.text} primaryTypographyProps={{ fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? '#00A896' : '#374151' }} />
                     {isActive && <Box sx={{ width: 3, height: 18, borderRadius: 2, bgcolor: '#00A896' }} />}
@@ -136,7 +144,11 @@ export default function Layout() {
       <Box sx={{ p: 2, borderTop: '1px solid #F0F0F0' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, p: 1.5, bgcolor: '#F7F9FC', borderRadius: 2 }}>
           <Avatar sx={{ bgcolor: '#00A896', width: 36, height: 36, fontSize: 15, fontWeight: 600 }}>S</Avatar>
-          <Box><Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>Síndico</Typography><Typography sx={{ fontSize: 11, color: '#6B7280' }}>Administrador</Typography></Box>
+          <Box>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E' }}>
+              {userProfile === 'admin' ? 'Administrador' : userProfile === 'resident' ? 'Condômino' : 'Colaborador'}
+            </Typography>
+          </Box>
         </Box>
         <Button fullWidth onClick={() => { logout(); navigate('/login'); }} startIcon={<ExitToApp />}
           sx={{ color: '#6B7280', fontSize: 12, textTransform: 'none', borderRadius: 2, py: 1, '&:hover': { bgcolor: '#FFF5F5', color: '#E63946' } }}>Sair</Button>
@@ -163,7 +175,11 @@ export default function Layout() {
             <Typography sx={{ flexGrow: 1, fontWeight: 600, fontSize: 15, color: '#1A1A2E' }}>
               {currentMenu.find(m => m.path === location.pathname)?.text || 'Dashboard'}
             </Typography>
-            <Chip label={userProfile === 'admin' ? '👔 Admin' : userProfile === 'resident' ? '👤 Condômino' : '🔑 Colaborador'} size="small" sx={{ mr: 1, bgcolor: '#F0FDF9', color: '#00A896', fontWeight: 600, fontSize: 11 }} />
+            <Chip 
+              label={userProfile === 'admin' ? '👔 Admin' : userProfile === 'resident' ? '👤 Condômino' : '🔑 Colaborador'} 
+              size="small" 
+              sx={{ mr: 1, bgcolor: '#F0FDF9', color: '#00A896', fontWeight: 600, fontSize: 11 }} 
+            />
             <IconButton sx={{ color: '#6B7280' }} size="small" onClick={(e) => setAnchorEl(e.currentTarget)}>
               <Badge badgeContent={notifications.total} color="error"><Notifications fontSize="small" /></Badge>
             </IconButton>
