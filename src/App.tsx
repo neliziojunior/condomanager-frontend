@@ -1,8 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
+import SetupCondominium from './pages/SetupCondominium';
 import Dashboard from './pages/Dashboard';
+import Transparency from './pages/Transparency';
 import Expenses from './pages/Expenses';
+import EmployeeExpenses from './pages/EmployeeExpenses';
+import Employees from './pages/Employees';
+import Payroll from './pages/Payroll';
 import Units from './pages/Units';
 import Maintenance from './pages/Maintenance';
 import Packages from './pages/Packages';
@@ -20,7 +25,7 @@ import Accounting from './pages/Accounting';
 import Signatures from './pages/Signatures';
 import Inventory from './pages/Inventory';
 import Assemblies from './pages/Assemblies';
-import Payments from './pages/Payments'; // ✅ NOVO: Payments
+import Payments from './pages/Payments';
 import Layout from './components/Layout';
 
 export default function App() {
@@ -30,9 +35,14 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/setup" element={<SetupCondominium />} />
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/transparency" element={<Transparency />} />
             <Route path="/expenses" element={<Expenses />} />
+            <Route path="/employee-expenses" element={<EmployeeExpenses />} />
+            <Route path="/employees" element={<Employees />} />
+            <Route path="/payroll" element={<Payroll />} />
             <Route path="/units" element={<Units />} />
             <Route path="/maintenance" element={<Maintenance />} />
             <Route path="/packages" element={<Packages />} />
@@ -50,7 +60,7 @@ export default function App() {
             <Route path="/signatures" element={<Signatures />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/assemblies" element={<Assemblies />} />
-            <Route path="/payments" element={<Payments />} /> {/* ✅ NOVO: Payments */}
+            <Route path="/payments" element={<Payments />} />
           </Route>
         </Routes>
       </BrowserRouter>

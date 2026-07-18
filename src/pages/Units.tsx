@@ -2,29 +2,38 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import {
   Typography, Card, CardContent, Grid, TextField, Button, Select, MenuItem,
-  Box, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar
+  Box, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
+  Snackbar
 } from '@mui/material';
-import { Add, PersonAdd, PersonRemove, Pets, DirectionsCar, Delete } from '@mui/icons-material';
+import { Add, PersonAdd, PersonRemove, Pets, DirectionsCar, Delete, Edit } from '@mui/icons-material';
 
 export default function Units() {
   const [units, setUnits] = useState<any[]>([]);
   const [showUnitForm, setShowUnitForm] = useState(false);
+  const [editingUnit, setEditingUnit] = useState<any>(null);
   const [showResidentForm, setShowResidentForm] = useState<any>(null);
   const [showPetForm, setShowPetForm] = useState<any>(null);
   const [showVehicleForm, setShowVehicleForm] = useState<any>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
+  // Unit form
   const [number, setNumber] = useState('');
   const [floor, setFloor] = useState('');
   const [type, setType] = useState('APARTMENT');
   const [area, setArea] = useState('');
+
+  // Resident form
   const [residentName, setResidentName] = useState('');
   const [residentEmail, setResidentEmail] = useState('');
   const [residentPhone, setResidentPhone] = useState('');
   const [isOwner, setIsOwner] = useState(false);
+
+  // Pet form
   const [petName, setPetName] = useState('');
   const [petType, setPetType] = useState('DOG');
   const [petBreed, setPetBreed] = useState('');
+
+  // Vehicle form
   const [vehicleBrand, setVehicleBrand] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
   const [vehiclePlate, setVehiclePlate] = useState('');
@@ -52,28 +61,71 @@ export default function Units() {
     setUnits(data);
   }
 
-  async function createUnit(e: React.FormEvent) {
-    e.preventDefault();
-    await api.post('/units', { number, floor: Number(floor) || undefined, type, area: Number(area) || undefined });
-    setSnackbar({ open: true, message: 'Unidade criada!', severity: 'success' });
-    setShowUnitForm(false); setNumber(''); setFloor(''); setArea('');
-    loadUnits();
+  // ✅ ABRIR PARA CRIAR
+  function openCreate() {
+    setEditingUnit(null);
+    setNumber('');
+    setFloor('');
+    setType('APARTMENT');
+    setArea('');
+    setShowUnitForm(true);
   }
 
+  // ✅ ABRIR PARA EDITAR
+  function openEdit(unit: any) {
+    setEditingUnit(unit);
+    setNumber(unit.number);
+    setFloor(unit.floor?.toString() || '');
+    setType(unit.type || 'APARTMENT');
+    setArea(unit.area?.toString() || '');
+    setShowUnitForm(true);
+  }
+
+  // ✅ SALVAR (CRIAR OU EDITAR)
+  async function handleUnitSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const payload = { 
+      number, 
+      floor: floor ? Number(floor) : undefined, 
+      type, 
+      area: area ? Number(area) : undefined 
+    };
+
+    try {
+      if (editingUnit) {
+        await api.put(`/units/${editingUnit.id}`, payload);
+        setSnackbar({ open: true, message: 'Unidade atualizada!', severity: 'success' });
+      } else {
+        await api.post('/units', payload);
+        setSnackbar({ open: true, message: 'Unidade criada!', severity: 'success' });
+      }
+      setShowUnitForm(false);
+      loadUnits();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Erro ao salvar', severity: 'error' });
+    }
+  }
+
+  // ✅ ADICIONAR MORADOR
   async function addResident(e: React.FormEvent) {
     e.preventDefault();
-    await api.post(`/units/${showResidentForm.id}/residents`, { name: residentName, email: residentEmail, phone: residentPhone, isOwner });
+    await api.post(`/units/${showResidentForm.id}/residents`, {
+      name: residentName, email: residentEmail, phone: residentPhone, isOwner
+    });
     setSnackbar({ open: true, message: 'Morador adicionado!', severity: 'success' });
-    setShowResidentForm(null); setResidentName(''); setResidentEmail(''); setResidentPhone(''); setIsOwner(false);
+    setShowResidentForm(null);
+    setResidentName(''); setResidentEmail(''); setResidentPhone(''); setIsOwner(false);
     loadUnits();
   }
 
+  // ✅ REMOVER MORADOR
   async function removeResident(unitId: string, personId: string) {
     if (!confirm('Remover este morador?')) return;
     await api.delete(`/units/${unitId}/residents/${personId}`);
     loadUnits();
   }
 
+  // ✅ PET
   async function addPet(e: React.FormEvent) {
     e.preventDefault();
     await api.post(`/units/residents/${showPetForm.id}/pets`, { name: petName, type: petType, breed: petBreed });
@@ -87,9 +139,12 @@ export default function Units() {
     loadUnits();
   }
 
+  // ✅ VEÍCULO
   async function addVehicle(e: React.FormEvent) {
     e.preventDefault();
-    await api.post(`/units/residents/${showVehicleForm.id}/vehicles`, { brand: vehicleBrand, model: vehicleModel, plate: vehiclePlate, color: vehicleColor });
+    await api.post(`/units/residents/${showVehicleForm.id}/vehicles`, {
+      brand: vehicleBrand, model: vehicleModel, plate: vehiclePlate, color: vehicleColor
+    });
     setSnackbar({ open: true, message: 'Veículo adicionado!', severity: 'success' });
     setShowVehicleForm(null); setVehicleBrand(''); setVehicleModel(''); setVehiclePlate(''); setVehicleColor('');
     loadUnits();
@@ -104,7 +159,9 @@ export default function Units() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h6" fontWeight={700}>🏠 Unidades e Moradores</Typography>
-        <Button variant="contained" size="small" startIcon={<Add />} onClick={() => setShowUnitForm(true)}>Nova Unidade</Button>
+        <Button variant="contained" size="small" startIcon={<Add />} onClick={openCreate}>
+          Nova Unidade
+        </Button>
       </Box>
 
       <Grid container spacing={2}>
@@ -112,30 +169,45 @@ export default function Units() {
           <Grid item xs={12} md={6} key={unit.id}>
             <Card sx={{ borderRadius: 2 }}>
               <CardContent>
+                {/* Cabeçalho da Unidade */}
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Box>
                     <Typography fontWeight={600}>Unidade {unit.number}</Typography>
                     <Typography variant="caption" color="textSecondary">
-                      {unit.type === 'APARTMENT' ? 'Apartamento' : unit.type} {unit.floor && `• ${unit.floor}º andar`}
+                      {unit.type === 'APARTMENT' ? 'Apartamento' : unit.type} 
+                      {unit.floor && ` • ${unit.floor}º andar`}
+                      {unit.area && ` • ${unit.area}m²`}
                     </Typography>
                   </Box>
-                  <Button size="small" variant="outlined" startIcon={<PersonAdd />} onClick={() => { console.log('Abrir modal morador para unidade:', unit.id); setShowResidentForm(unit); }}>
-                    Morador
-                  </Button>
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {/* ✅ BOTÃO EDITAR UNIDADE */}
+                    <IconButton size="small" color="primary" onClick={() => openEdit(unit)}>
+                      <Edit fontSize="small" />
+                    </IconButton>
+                    {/* ✅ BOTÃO ADICIONAR MORADOR */}
+                    <Button size="small" variant="outlined" startIcon={<PersonAdd />} onClick={() => setShowResidentForm(unit)}>
+                      Morador
+                    </Button>
+                  </Box>
                 </Box>
 
+                {/* Moradores */}
                 {unit.residents?.map((resident: any) => (
                   <Box key={resident.id} sx={{ mb: 1.5, p: 1.5, bgcolor: '#f8f9fa', borderRadius: 1.5 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Box>
-                        <Typography variant="body2" fontWeight={600}>{resident.name} {resident.role === 'OWNER' && '👑'}</Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {resident.name} {resident.role === 'OWNER' && '👑'}
+                        </Typography>
                         <Typography variant="caption" display="block">{resident.email}</Typography>
+                        {resident.phone && <Typography variant="caption" display="block">{resident.phone}</Typography>}
                       </Box>
                       <IconButton size="small" onClick={() => removeResident(unit.id, resident.id)}>
                         <PersonRemove fontSize="small" color="error" />
                       </IconButton>
                     </Box>
 
+                    {/* Pets */}
                     <Box mt={1}>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Pets fontSize="small" color="primary" />
@@ -150,6 +222,7 @@ export default function Units() {
                       ))}
                     </Box>
 
+                    {/* Veículos */}
                     <Box mt={0.5}>
                       <Box display="flex" alignItems="center" gap={1}>
                         <DirectionsCar fontSize="small" color="primary" />
@@ -171,10 +244,10 @@ export default function Units() {
         ))}
       </Grid>
 
-      {/* Modal Nova Unidade */}
+      {/* Modal Unidade (Criar/Editar) */}
       <Dialog open={showUnitForm} onClose={() => setShowUnitForm(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Nova Unidade</DialogTitle>
-        <form onSubmit={createUnit}>
+        <DialogTitle>{editingUnit ? '✏️ Editar Unidade' : '🏠 Nova Unidade'}</DialogTitle>
+        <form onSubmit={handleUnitSubmit}>
           <DialogContent>
             <Grid container spacing={2}>
               <Grid item xs={8}><TextField fullWidth label="Número" size="small" value={number} onChange={e => setNumber(e.target.value)} required /></Grid>
@@ -187,13 +260,16 @@ export default function Units() {
               <Grid item xs={6}><TextField fullWidth label="Área (m²)" size="small" type="number" value={area} onChange={e => setArea(e.target.value)} /></Grid>
             </Grid>
           </DialogContent>
-          <DialogActions><Button onClick={() => setShowUnitForm(false)}>Cancelar</Button><Button type="submit" variant="contained">Salvar</Button></DialogActions>
+          <DialogActions>
+            <Button onClick={() => setShowUnitForm(false)}>Cancelar</Button>
+            <Button type="submit" variant="contained">{editingUnit ? 'Atualizar' : 'Criar'}</Button>
+          </DialogActions>
         </form>
       </Dialog>
 
       {/* Modal Adicionar Morador */}
       <Dialog open={!!showResidentForm} onClose={() => setShowResidentForm(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Adicionar Morador - Unidade {showResidentForm?.number}</DialogTitle>
+        <DialogTitle>👤 Adicionar Morador - Unidade {showResidentForm?.number}</DialogTitle>
         <form onSubmit={addResident}>
           <DialogContent>
             <Grid container spacing={2}>
@@ -202,12 +278,15 @@ export default function Units() {
               <Grid item xs={4}><TextField fullWidth label="Telefone" size="small" value={residentPhone} onChange={e => setResidentPhone(e.target.value)} /></Grid>
               <Grid item xs={12}>
                 <Button variant={isOwner ? 'contained' : 'outlined'} fullWidth onClick={() => setIsOwner(!isOwner)} color={isOwner ? 'primary' : 'inherit'}>
-                  {isOwner ? '👑 Proprietário' : '👤 Morador'}
+                  {isOwner ? '👑 Proprietário' : '👤 Inquilino/Morador'}
                 </Button>
               </Grid>
             </Grid>
           </DialogContent>
-          <DialogActions><Button onClick={() => setShowResidentForm(null)}>Cancelar</Button><Button type="submit" variant="contained">Adicionar</Button></DialogActions>
+          <DialogActions>
+            <Button onClick={() => setShowResidentForm(null)}>Cancelar</Button>
+            <Button type="submit" variant="contained">Adicionar</Button>
+          </DialogActions>
         </form>
       </Dialog>
 

@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// URL do backend no Railway (vamos atualizar depois do deploy)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
+// ✅ Detecta se está no PC (localhost) ou no celular (IP da rede)
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_URL = isLocalhost 
+  ? 'http://localhost:3333' 
+  : `http://${window.location.hostname}:3333`;
 
 const api = axios.create({ baseURL: API_URL });
 
