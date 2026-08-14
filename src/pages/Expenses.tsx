@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api, { uploadFile } from '../services/api';
-import { 
-  Typography, Card, CardContent, Grid, TextField, Button, Select, MenuItem, 
+import {
+  Typography, Card, CardContent, Grid, TextField, Button, Select, MenuItem,
   Table, TableBody, TableCell, TableHead, TableRow, Box, Chip, IconButton, InputAdornment,
   Dialog, DialogTitle, DialogContent, DialogActions, Alert, Snackbar, Tooltip,
   Checkbox
@@ -21,7 +21,7 @@ export default function Expenses() {
   const [showInvoices, setShowInvoices] = useState(false);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [selectedInvoices, setSelectedInvoices] = useState<number[]>([]);
-  const [scanning, setScanning] = useState(false); // ✅ NOVO: Estado para scan de recibo
+  const [scanning, setScanning] = useState(false);
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -48,7 +48,6 @@ export default function Expenses() {
     } catch (error) {}
   }
 
-  // ✅ NOVO: Função para scan de recibo com OCR
   async function scanReceipt(file: File) {
     setScanning(true);
     const formData = new FormData();
@@ -115,21 +114,19 @@ export default function Expenses() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18 }}>💰 Despesas</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18 }}>Despesas</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {/* ✅ NOVO: Botão de Scan de Recibo */}
           <Button variant="outlined" component="label" startIcon={<CameraAlt />} disabled={scanning} size="small" color="secondary">
-            📸 Recibo
+            Recibo
             <input type="file" hidden accept="image/*" capture="environment" onChange={(e) => { const file = e.target.files?.[0]; if (file) scanReceipt(file); }} />
           </Button>
-          <Button variant="outlined" size="small" startIcon={<AutoAwesome />} onClick={fetchInvoices} color="secondary">🔍 Notas</Button>
+          <Button variant="outlined" size="small" startIcon={<AutoAwesome />} onClick={fetchInvoices} color="secondary">Notas</Button>
           <Button variant="outlined" size="small" startIcon={<Download />} onClick={() => window.open('http://192.168.0.3:3333/expenses/report/pdf', '_blank')}>PDF</Button>
           <Button variant="contained" size="small" onClick={() => { setEditingId(null); setShowForm(true); }}>+ Nova</Button>
         </Box>
       </Box>
 
-      {/* Filtros, Tabela, Modais... (mantidos) */}
-      <Card sx={{ mb: 3, borderRadius: 2 }}><CardContent sx={{ p: 2 }}>
+      <Card sx={{ mb: 3 }}><CardContent sx={{ p: 2 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}><TextField fullWidth size="small" placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }} /></Grid>
           <Grid item xs={12} md={3}><Select fullWidth size="small" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}><MenuItem value="ALL">Todos</MenuItem><MenuItem value="PENDING">Pendentes</MenuItem><MenuItem value="PAID">Pagas</MenuItem><MenuItem value="OVERDUE">Vencidas</MenuItem></Select></Grid>
@@ -137,7 +134,7 @@ export default function Expenses() {
         </Grid>
       </CardContent></Card>
 
-      <Card sx={{ borderRadius: 2 }}>
+      <Card>
         <Table size="small">
           <TableHead><TableRow><TableCell>Descrição</TableCell><TableCell>Categoria</TableCell><TableCell>Valor</TableCell><TableCell>Vencimento</TableCell><TableCell>Comp.</TableCell><TableCell>Status</TableCell><TableCell>Ações</TableCell></TableRow></TableHead>
           <TableBody>

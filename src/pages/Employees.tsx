@@ -3,7 +3,7 @@ import api from '../services/api';
 import {
   Typography, Card, CardContent, Grid, TextField, Button, Select, MenuItem,
   Box, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
-  Snackbar, Divider
+  Snackbar, Divider, Switch, FormControlLabel
 } from '@mui/material';
 import { Add, Edit, Delete, Badge, Calculate } from '@mui/icons-material';
 
@@ -15,7 +15,6 @@ export default function Employees() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  // Dados Pessoais
   const [name, setName] = useState('');
   const [role, setRole] = useState('Porteiro');
   const [cpf, setCpf] = useState('');
@@ -24,24 +23,25 @@ export default function Employees() {
   const [dataAdmissao, setDataAdmissao] = useState('');
   const [status, setStatus] = useState('ATIVO');
 
-  // Remuneração
   const [salarioBase, setSalarioBase] = useState('');
-  const [adicionalNoturno, setAdicionalNoturno] = useState('');
-  const [periculosidade, setPericulosidade] = useState('');
-  const [insalubridade, setInsalubridade] = useState('');
+  
+  const [temPericulosidade, setTemPericulosidade] = useState(false);
+  const [temAdicionalNoturno, setTemAdicionalNoturno] = useState(false);
+  const [temInsalubridade, setTemInsalubridade] = useState(false);
+  const [grauInsalubridade, setGrauInsalubridade] = useState('10');
 
-  // Benefícios
-  const [valeTransporte, setValeTransporte] = useState('');
-  const [valeRefeicao, setValeRefeicao] = useState('');
-  const [planoSaude, setPlanoSaude] = useState('');
-  const [planoOdonto, setPlanoOdonto] = useState('');
-  const [seguroVida, setSeguroVida] = useState('');
+  const [temValeTransporte, setTemValeTransporte] = useState(false);
+  const [temValeRefeicao, setTemValeRefeicao] = useState(false);
+  const [valeTransporteValor, setValeTransporteValor] = useState('');
+  const [valeRefeicaoValor, setValeRefeicaoValor] = useState('');
+  
+  // ✅ Apenas % de cobertura (sem valor total)
+  const [temPlanoSaude, setTemPlanoSaude] = useState(false);
+  const [planoSaudeCobertura, setPlanoSaudeCobertura] = useState('100');
+  
+  const [temPlanoOdonto, setTemPlanoOdonto] = useState(false);
+  const [planoOdontoCobertura, setPlanoOdontoCobertura] = useState('100');
 
-  // Encargos
-  const [fgtsPercentual, setFgtsPercentual] = useState('8');
-  const [inssPercentual, setInssPercentual] = useState('');
-
-  // Variáveis
   const [horasExtras, setHorasExtras] = useState('');
   const [faltas, setFaltas] = useState('');
 
@@ -52,40 +52,65 @@ export default function Employees() {
     setEmployees(data);
   }
 
+  function calcularAutomatico() {
+    const base = Number(salarioBase) || 0;
+    const periculosidade = temPericulosidade ? base * 0.30 : 0;
+    const adicionalNoturno = temAdicionalNoturno ? base * 0.20 : 0;
+    const salarioMinimo = 1412;
+    const insalubridade = temInsalubridade ? salarioMinimo * (Number(grauInsalubridade) / 100) : 0;
+    
+    return { periculosidade, adicionalNoturno, insalubridade };
+  }
+
   function openEdit(emp: any) {
     setEditingId(emp.id);
     setName(emp.name || ''); setRole(emp.role || 'Porteiro'); setCpf(emp.cpf || ''); setPis(emp.pis || '');
     setCtps(emp.ctps || ''); setDataAdmissao(emp.dataAdmissao?.split('T')[0] || ''); setStatus(emp.status || 'ATIVO');
-    setSalarioBase(emp.salarioBase?.toString() || ''); setAdicionalNoturno(emp.adicionalNoturno?.toString() || '');
-    setPericulosidade(emp.periculosidade?.toString() || ''); setInsalubridade(emp.insalubridade?.toString() || '');
-    setValeTransporte(emp.valeTransporte?.toString() || ''); setValeRefeicao(emp.valeRefeicao?.toString() || '');
-    setPlanoSaude(emp.planoSaude?.toString() || ''); setPlanoOdonto(emp.planoOdonto?.toString() || '');
-    setSeguroVida(emp.seguroVida?.toString() || '');
-    setFgtsPercentual(emp.fgtsPercentual?.toString() || '8'); setInssPercentual(emp.inssPercentual?.toString() || '');
+    setSalarioBase(emp.salarioBase?.toString() || '');
+    
+    setTemPericulosidade((emp.periculosidade || 0) > 0);
+    setTemAdicionalNoturno((emp.adicionalNoturno || 0) > 0);
+    setTemInsalubridade((emp.insalubridade || 0) > 0);
+    
+    setTemValeTransporte((emp.valeTransporte || 0) > 0);
+    setTemValeRefeicao((emp.valeRefeicao || 0) > 0);
+    setValeTransporteValor(emp.valeTransporte?.toString() || '');
+    setValeRefeicaoValor(emp.valeRefeicao?.toString() || '');
+    
+    setTemPlanoSaude(emp.planoSaudeCobertura > 0);
+    setTemPlanoOdonto(emp.planoOdontoCobertura > 0);
+    setPlanoSaudeCobertura(emp.planoSaudeCobertura?.toString() || '100');
+    setPlanoOdontoCobertura(emp.planoOdontoCobertura?.toString() || '100');
+    
     setHorasExtras(emp.horasExtras?.toString() || ''); setFaltas(emp.faltas?.toString() || '');
     setShowForm(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const calculado = calcularAutomatico();
+    
     const payload = {
       name, role, cpf, pis, ctps, dataAdmissao: dataAdmissao || undefined, status,
-      salarioBase: Number(salarioBase), adicionalNoturno: Number(adicionalNoturno),
-      periculosidade: Number(periculosidade), insalubridade: Number(insalubridade),
-      valeTransporte: Number(valeTransporte), valeRefeicao: Number(valeRefeicao),
-      planoSaude: Number(planoSaude), planoOdonto: Number(planoOdonto), seguroVida: Number(seguroVida),
-      fgtsPercentual: Number(fgtsPercentual), inssPercentual: Number(inssPercentual),
+      salarioBase: Number(salarioBase),
+      periculosidade: temPericulosidade ? calculado.periculosidade : 0,
+      adicionalNoturno: temAdicionalNoturno ? calculado.adicionalNoturno : 0,
+      insalubridade: temInsalubridade ? calculado.insalubridade : 0,
+      valeTransporte: temValeTransporte ? Number(valeTransporteValor) : 0,
+      valeRefeicao: temValeRefeicao ? Number(valeRefeicaoValor) : 0,
+      planoSaudeCobertura: temPlanoSaude ? Number(planoSaudeCobertura) : 0,
+      planoOdontoCobertura: temPlanoOdonto ? Number(planoOdontoCobertura) : 0,
       horasExtras: Number(horasExtras), faltas: Number(faltas),
+      fgtsPercentual: 8,
     };
 
     try {
       if (editingId) {
         await api.put(`/employees/${editingId}`, payload);
-        setSnackbar({ open: true, message: 'Funcionário atualizado!', severity: 'success' });
       } else {
         await api.post('/employees', payload);
-        setSnackbar({ open: true, message: 'Funcionário cadastrado!', severity: 'success' });
       }
+      setSnackbar({ open: true, message: editingId ? 'Atualizado!' : 'Cadastrado!', severity: 'success' });
       setShowForm(false); setEditingId(null);
       loadEmployees();
     } catch (error) {
@@ -105,13 +130,15 @@ export default function Employees() {
     loadEmployees();
   }
 
+  const calculado = calcularAutomatico();
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography variant="h6" fontWeight={700}>👥 Funcionários</Typography>
           <Typography variant="caption" color="textSecondary">
-            {employees.length} funcionário(s) cadastrado(s)
+            {employees.length} funcionário(s)
           </Typography>
         </Box>
         <Button variant="contained" size="small" startIcon={<Add />} onClick={() => { setEditingId(null); setShowForm(true); }}>
@@ -134,7 +161,7 @@ export default function Employees() {
                     </Box>
                   </Box>
                   <Box>
-                    <IconButton size="small" onClick={() => calcularFolha(emp.id)} title="Calcular Folha"><Calculate fontSize="small" color="warning" /></IconButton>
+                    <IconButton size="small" onClick={() => calcularFolha(emp.id)}><Calculate fontSize="small" color="warning" /></IconButton>
                     <IconButton size="small" color="primary" onClick={() => openEdit(emp)}><Edit fontSize="small" /></IconButton>
                     <IconButton size="small" color="error" onClick={() => deleteEmployee(emp.id)}><Delete fontSize="small" /></IconButton>
                   </Box>
@@ -142,8 +169,6 @@ export default function Employees() {
                 <Grid container spacing={1}>
                   <Grid item xs={6}><Typography variant="caption">Salário: R$ {emp.salarioBase?.toFixed(2)}</Typography></Grid>
                   <Grid item xs={6}><Typography variant="caption">Líquido: R$ {emp.totalLiquido?.toFixed(2)}</Typography></Grid>
-                  <Grid item xs={6}><Typography variant="caption">FGTS: R$ {emp.fgtsValor?.toFixed(2)}</Typography></Grid>
-                  <Grid item xs={6}><Typography variant="caption">INSS: R$ {emp.inssValor?.toFixed(2)}</Typography></Grid>
                 </Grid>
               </CardContent>
             </Card>
@@ -151,7 +176,7 @@ export default function Employees() {
         ))}
       </Grid>
 
-      {/* Modal completo */}
+      {/* Modal */}
       <Dialog open={showForm} onClose={() => setShowForm(false)} maxWidth="md" fullWidth>
         <DialogTitle>{editingId ? '✏️ Editar Funcionário' : '👥 Novo Funcionário'}</DialogTitle>
         <form onSubmit={handleSubmit}>
@@ -167,10 +192,7 @@ export default function Employees() {
               </Grid>
               <Grid item xs={6} sm={3}>
                 <Select fullWidth size="small" value={status} onChange={e => setStatus(e.target.value)}>
-                  <MenuItem value="ATIVO">Ativo</MenuItem>
-                  <MenuItem value="FERIAS">Férias</MenuItem>
-                  <MenuItem value="AFASTADO">Afastado</MenuItem>
-                  <MenuItem value="DEMITIDO">Demitido</MenuItem>
+                  <MenuItem value="ATIVO">Ativo</MenuItem><MenuItem value="FERIAS">Férias</MenuItem><MenuItem value="AFASTADO">Afastado</MenuItem><MenuItem value="DEMITIDO">Demitido</MenuItem>
                 </Select>
               </Grid>
               <Grid item xs={4}><TextField fullWidth label="CPF" size="small" value={cpf} onChange={e => setCpf(e.target.value)} /></Grid>
@@ -184,28 +206,120 @@ export default function Employees() {
             {/* Remuneração */}
             <Typography variant="subtitle2" fontWeight={600} mb={1}>💰 Remuneração</Typography>
             <Grid container spacing={1.5} mb={2}>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="Salário Base" size="small" type="number" value={salarioBase} onChange={e => setSalarioBase(e.target.value)} /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="Adic. Noturno" size="small" type="number" value={adicionalNoturno} onChange={e => setAdicionalNoturno(e.target.value)} /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="Periculosidade" size="small" type="number" value={periculosidade} onChange={e => setPericulosidade(e.target.value)} helperText="30% do salário base" /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="Insalubridade" size="small" type="number" value={insalubridade} onChange={e => setInsalubridade(e.target.value)} helperText="10%/20%/40%" /></Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField fullWidth label="Salário Base (R$)" size="small" type="number" value={salarioBase} onChange={e => setSalarioBase(e.target.value)} required />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Box sx={{ bgcolor: '#F0FDF9', p: 1.5, borderRadius: 2, textAlign: 'center' }}>
+                  <Typography variant="caption" color="textSecondary">TOTAL CALCULADO</Typography>
+                  <Typography variant="h6" fontWeight={700} color="primary">
+                    R$ {(Number(salarioBase) + calculado.periculosidade + calculado.adicionalNoturno + calculado.insalubridade).toFixed(2)}
+                  </Typography>
+                </Box>
+              </Grid>
             </Grid>
+
+            {/* Adicionais CLT */}
+            <Typography variant="subtitle2" fontWeight={600} mb={1}>⚙️ Adicionais (CLT)</Typography>
+            <Grid container spacing={1} mb={2}>
+              <Grid item xs={6} sm={4}>
+                <FormControlLabel
+                  control={<Switch checked={temPericulosidade} onChange={e => setTemPericulosidade(e.target.checked)} color="warning" />}
+                  label="Periculosidade (30%)"
+                />
+              </Grid>
+              <Grid item xs={6} sm={4}>
+                <FormControlLabel
+                  control={<Switch checked={temAdicionalNoturno} onChange={e => setTemAdicionalNoturno(e.target.checked)} color="primary" />}
+                  label="Adic. Noturno (20%)"
+                />
+              </Grid>
+              <Grid item xs={6} sm={4}>
+                <FormControlLabel
+                  control={<Switch checked={temInsalubridade} onChange={e => setTemInsalubridade(e.target.checked)} color="error" />}
+                  label="Insalubridade"
+                />
+                {temInsalubridade && (
+                  <Select size="small" value={grauInsalubridade} onChange={e => setGrauInsalubridade(e.target.value)} sx={{ ml: 2, width: 80 }}>
+                    <MenuItem value="10">10%</MenuItem><MenuItem value="20">20%</MenuItem><MenuItem value="40">40%</MenuItem>
+                  </Select>
+                )}
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ mb: 2 }} />
 
             {/* Benefícios */}
             <Typography variant="subtitle2" fontWeight={600} mb={1}>🎁 Benefícios</Typography>
             <Grid container spacing={1.5} mb={2}>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="Vale Transporte" size="small" type="number" value={valeTransporte} onChange={e => setValeTransporte(e.target.value)} /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="Vale Refeição" size="small" type="number" value={valeRefeicao} onChange={e => setValeRefeicao(e.target.value)} /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="Plano Saúde" size="small" type="number" value={planoSaude} onChange={e => setPlanoSaude(e.target.value)} /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="Plano Odonto" size="small" type="number" value={planoOdonto} onChange={e => setPlanoOdonto(e.target.value)} /></Grid>
+              <Grid item xs={6} sm={3}>
+                <FormControlLabel
+                  control={<Switch checked={temValeTransporte} onChange={e => setTemValeTransporte(e.target.checked)} />}
+                  label="Vale Transporte"
+                />
+                {temValeTransporte && (
+                  <TextField size="small" type="number" label="Valor R$" value={valeTransporteValor} onChange={e => setValeTransporteValor(e.target.value)} sx={{ ml: 2, width: 100 }} />
+                )}
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <FormControlLabel
+                  control={<Switch checked={temValeRefeicao} onChange={e => setTemValeRefeicao(e.target.checked)} />}
+                  label="Vale Refeição"
+                />
+                {temValeRefeicao && (
+                  <TextField size="small" type="number" label="Valor R$" value={valeRefeicaoValor} onChange={e => setValeRefeicaoValor(e.target.value)} sx={{ ml: 2, width: 100 }} />
+                )}
+              </Grid>
+              
+              {/* ✅ Plano Saúde - só % */}
+              <Grid item xs={6} sm={3}>
+                <FormControlLabel
+                  control={<Switch checked={temPlanoSaude} onChange={e => setTemPlanoSaude(e.target.checked)} />}
+                  label="Plano Saúde"
+                />
+                {temPlanoSaude && (
+                  <TextField 
+                    size="small" 
+                    type="number" 
+                    label="Cobertura %" 
+                    value={planoSaudeCobertura} 
+                    onChange={e => setPlanoSaudeCobertura(e.target.value)} 
+                    sx={{ ml: 2, width: 100 }} 
+                    inputProps={{ min: 0, max: 100 }}
+                  />
+                )}
+              </Grid>
+
+              {/* ✅ Plano Odonto - só % */}
+              <Grid item xs={6} sm={3}>
+                <FormControlLabel
+                  control={<Switch checked={temPlanoOdonto} onChange={e => setTemPlanoOdonto(e.target.checked)} />}
+                  label="Plano Odonto"
+                />
+                {temPlanoOdonto && (
+                  <TextField 
+                    size="small" 
+                    type="number" 
+                    label="Cobertura %" 
+                    value={planoOdontoCobertura} 
+                    onChange={e => setPlanoOdontoCobertura(e.target.value)} 
+                    sx={{ ml: 2, width: 100 }} 
+                    inputProps={{ min: 0, max: 100 }}
+                  />
+                )}
+              </Grid>
             </Grid>
 
-            {/* Encargos e Variáveis */}
-            <Typography variant="subtitle2" fontWeight={600} mb={1}>📊 Encargos e Variáveis</Typography>
+            {/* Variáveis */}
+            <Typography variant="subtitle2" fontWeight={600} mb={1}>⏰ Variáveis</Typography>
             <Grid container spacing={1.5}>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="FGTS %" size="small" type="number" value={fgtsPercentual} onChange={e => setFgtsPercentual(e.target.value)} /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="INSS %" size="small" type="number" value={inssPercentual} onChange={e => setInssPercentual(e.target.value)} /></Grid>
-              <Grid item xs={6} sm={3}><TextField fullWidth label="Horas Extras" size="small" type="number" value={horasExtras} onChange={e => setHorasExtras(e.target.value)} /></Grid>
+              <Grid item xs={6} sm={3}><TextField fullWidth label="Horas Extras (R$)" size="small" type="number" value={horasExtras} onChange={e => setHorasExtras(e.target.value)} /></Grid>
               <Grid item xs={6} sm={3}><TextField fullWidth label="Faltas (R$)" size="small" type="number" value={faltas} onChange={e => setFaltas(e.target.value)} /></Grid>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ bgcolor: '#F7F9FC', p: 1.5, borderRadius: 2 }}>
+                  <Typography variant="caption">📊 CLT: FGTS 8% • INSS conforme tabela • Cálculo automático ao salvar</Typography>
+                </Box>
+              </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
