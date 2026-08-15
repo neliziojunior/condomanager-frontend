@@ -116,7 +116,7 @@ export default function Payroll() {
                 <TableCell>{emp.role}</TableCell>
                 <TableCell align="right">R$ {(emp.totalProventos || 0).toFixed(2)}</TableCell>
                 <TableCell align="right" sx={{ color: 'error.main' }}>R$ {(emp.totalDescontos || 0).toFixed(2)}</TableCell>
-                <TableCell align="right" fontWeight={700}>R$ {(emp.totalLiquido || 0).toFixed(2)}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>R$ {(emp.totalLiquido || 0).toFixed(2)}</TableCell>
                 <TableCell align="right">R$ {(emp.fgtsValor || 0).toFixed(2)}</TableCell>
                 <TableCell align="right">R$ {(emp.inssValor || 0).toFixed(2)}</TableCell>
                 <TableCell>

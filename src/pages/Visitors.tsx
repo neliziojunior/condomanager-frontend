@@ -57,7 +57,7 @@ export default function Visitors() {
 
   function downloadQR() {
     if (!qrCode) return;
-    const link = document.createElement('a');
+    const link = window.document.createElement('a') as HTMLAnchorElement;
     link.href = qrCode;
     link.download = `qr-code-${qrVisitor?.name || 'visitante'}.png`;
     link.click();
