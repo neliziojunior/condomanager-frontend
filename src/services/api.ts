@@ -10,4 +10,12 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export function uploadFile(expenseId: string, file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post(`/expenses/${expenseId}/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+}
+
 export default api;
