@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-const api = axios.create({ 
-  baseURL: 'https://condpro.onrender.com' 
-});
+// Em desenvolvimento usa localhost, em produção usa Render
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3333'
+  : 'https://condpro.onrender.com';
+
+const api = axios.create({ baseURL: API_URL });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('@condomanager:token');
