@@ -88,6 +88,8 @@ export default function Layout() {
       { key: 'config', label: '⚙️ Configurações', icon: <Settings />, items: [
         { text: 'Configurações', icon: <Settings />, path: '/settings' },
       ]},
+      { key: 'config', label: '⚙️ Configurações', icon: <Settings />, items: [
+      ]},
     ],
     resident: [
       { key: 'dashboard', label: '📊 Dashboard', icon: <Dashboard />, items: [
@@ -114,6 +116,9 @@ export default function Layout() {
       ]},
       { key: 'ia', label: '🤖 IA', icon: <SmartToy />, items: [
         { text: 'Concierge IA', icon: <SmartToy />, path: '/chatbot' },
+      ]},
+      { key: 'config', label: '⚙️ Configurações', icon: <Settings />, items: [
+        { text: 'Configurações', icon: <Settings />, path: '/settings' },
       ]},
     ],
     staff: [
