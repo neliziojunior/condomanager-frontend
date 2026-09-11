@@ -26,6 +26,9 @@ import Signatures from './pages/Signatures';
 import Inventory from './pages/Inventory';
 import Assemblies from './pages/Assemblies';
 import Payments from './pages/Payments';
+import Settings from './pages/Settings';
+import Settings from './pages/Settings';
+import Settings from './pages/Settings';
 import Layout from './components/Layout';
 
 export default function App() {
@@ -61,6 +64,9 @@ export default function App() {
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/assemblies" element={<Assemblies />} />
             <Route path="/payments" element={<Payments />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>
