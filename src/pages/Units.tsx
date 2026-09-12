@@ -18,6 +18,7 @@ export default function Units() {
 
   // Unit form
   const [number, setNumber] = useState('');
+  const [block, setBlock] = useState('');
   const [floor, setFloor] = useState('');
   const [type, setType] = useState('APARTMENT');
   const [area, setArea] = useState('');
@@ -61,31 +62,27 @@ export default function Units() {
     setUnits(data);
   }
 
-  // ✅ ABRIR PARA CRIAR
   function openCreate() {
     setEditingUnit(null);
-    setNumber('');
-    setFloor('');
-    setType('APARTMENT');
-    setArea('');
+    setNumber(''); setBlock(''); setFloor(''); setType('APARTMENT'); setArea('');
     setShowUnitForm(true);
   }
 
-  // ✅ ABRIR PARA EDITAR
   function openEdit(unit: any) {
     setEditingUnit(unit);
     setNumber(unit.number);
+    setBlock(unit.block || '');
     setFloor(unit.floor?.toString() || '');
     setType(unit.type || 'APARTMENT');
     setArea(unit.area?.toString() || '');
     setShowUnitForm(true);
   }
 
-  // ✅ SALVAR (CRIAR OU EDITAR)
   async function handleUnitSubmit(e: React.FormEvent) {
     e.preventDefault();
     const payload = { 
       number, 
+      block: block || undefined,
       floor: floor ? Number(floor) : undefined, 
       type, 
       area: area ? Number(area) : undefined 
@@ -106,7 +103,6 @@ export default function Units() {
     }
   }
 
-  // ✅ ADICIONAR MORADOR
   async function addResident(e: React.FormEvent) {
     e.preventDefault();
     await api.post(`/units/${showResidentForm.id}/residents`, {
@@ -118,14 +114,12 @@ export default function Units() {
     loadUnits();
   }
 
-  // ✅ REMOVER MORADOR
   async function removeResident(unitId: string, personId: string) {
     if (!confirm('Remover este morador?')) return;
     await api.delete(`/units/${unitId}/residents/${personId}`);
     loadUnits();
   }
 
-  // ✅ PET
   async function addPet(e: React.FormEvent) {
     e.preventDefault();
     await api.post(`/units/residents/${showPetForm.id}/pets`, { name: petName, type: petType, breed: petBreed });
@@ -139,7 +133,6 @@ export default function Units() {
     loadUnits();
   }
 
-  // ✅ VEÍCULO
   async function addVehicle(e: React.FormEvent) {
     e.preventDefault();
     await api.post(`/units/residents/${showVehicleForm.id}/vehicles`, {
@@ -153,6 +146,20 @@ export default function Units() {
   async function deleteVehicle(id: string) {
     await api.delete(`/units/vehicles/${id}`);
     loadUnits();
+  }
+
+  function getTypeLabel(type: string) {
+    const labels: any = {
+      APARTMENT: '🏢 Apartamento',
+      STUDIO: '🏠 Studio / Kitnet',
+      COMMERCIAL: '🏪 Comercial / Loja',
+      HOUSE: '🏡 Casa',
+      LAND: '🌳 Terreno',
+      GARAGE: '🚗 Vaga de Garagem',
+      STORAGE: '📦 Depósito',
+      OTHER: '📌 Outro',
+    };
+    return labels[type] || type;
   }
 
   return (
@@ -169,29 +176,27 @@ export default function Units() {
           <Grid item xs={12} md={6} key={unit.id}>
             <Card sx={{ borderRadius: 2 }}>
               <CardContent>
-                {/* Cabeçalho da Unidade */}
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Box>
-                    <Typography fontWeight={600}>Unidade {unit.number}</Typography>
+                    <Typography fontWeight={600}>
+                      {unit.block && `${unit.block} - `}Unidade {unit.number}
+                    </Typography>
                     <Typography variant="caption" color="textSecondary">
-                      {unit.type === 'APARTMENT' ? 'Apartamento' : unit.type} 
+                      {getTypeLabel(unit.type)}
                       {unit.floor && ` • ${unit.floor}º andar`}
                       {unit.area && ` • ${unit.area}m²`}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    {/* ✅ BOTÃO EDITAR UNIDADE */}
                     <IconButton size="small" color="primary" onClick={() => openEdit(unit)}>
                       <Edit fontSize="small" />
                     </IconButton>
-                    {/* ✅ BOTÃO ADICIONAR MORADOR */}
                     <Button size="small" variant="outlined" startIcon={<PersonAdd />} onClick={() => setShowResidentForm(unit)}>
                       Morador
                     </Button>
                   </Box>
                 </Box>
 
-                {/* Moradores */}
                 {unit.residents?.map((resident: any) => (
                   <Box key={resident.id} sx={{ mb: 1.5, p: 1.5, bgcolor: '#f8f9fa', borderRadius: 1.5 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -207,7 +212,6 @@ export default function Units() {
                       </IconButton>
                     </Box>
 
-                    {/* Pets */}
                     <Box mt={1}>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Pets fontSize="small" color="primary" />
@@ -222,7 +226,6 @@ export default function Units() {
                       ))}
                     </Box>
 
-                    {/* Veículos */}
                     <Box mt={0.5}>
                       <Box display="flex" alignItems="center" gap={1}>
                         <DirectionsCar fontSize="small" color="primary" />
@@ -244,20 +247,36 @@ export default function Units() {
         ))}
       </Grid>
 
-      {/* Modal Unidade (Criar/Editar) */}
+      {/* Modal Unidade */}
       <Dialog open={showUnitForm} onClose={() => setShowUnitForm(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editingUnit ? '✏️ Editar Unidade' : '🏠 Nova Unidade'}</DialogTitle>
         <form onSubmit={handleUnitSubmit}>
           <DialogContent>
             <Grid container spacing={2}>
-              <Grid item xs={8}><TextField fullWidth label="Número" size="small" value={number} onChange={e => setNumber(e.target.value)} required /></Grid>
-              <Grid item xs={4}><TextField fullWidth label="Andar" size="small" type="number" value={floor} onChange={e => setFloor(e.target.value)} /></Grid>
-              <Grid item xs={6}>
+              <Grid item xs={4}>
+                <TextField fullWidth label="Bloco/Torre" size="small" value={block} onChange={e => setBlock(e.target.value)} placeholder="Ex: A" />
+              </Grid>
+              <Grid item xs={5}>
+                <TextField fullWidth label="Número/Identificação" size="small" value={number} onChange={e => setNumber(e.target.value)} required placeholder="101, Casa 5" />
+              </Grid>
+              <Grid item xs={3}>
+                <TextField fullWidth label="Andar" size="small" type="number" value={floor} onChange={e => setFloor(e.target.value)} />
+              </Grid>
+              <Grid item xs={8}>
                 <Select fullWidth size="small" value={type} onChange={e => setType(e.target.value)}>
-                  <MenuItem value="APARTMENT">Apartamento</MenuItem><MenuItem value="COMMERCIAL">Comercial</MenuItem><MenuItem value="STUDIO">Studio</MenuItem>
+                  <MenuItem value="APARTMENT">🏢 Apartamento</MenuItem>
+                  <MenuItem value="STUDIO">🏠 Studio / Kitnet</MenuItem>
+                  <MenuItem value="COMMERCIAL">🏪 Comercial / Loja</MenuItem>
+                  <MenuItem value="HOUSE">🏡 Casa</MenuItem>
+                  <MenuItem value="LAND">🌳 Terreno</MenuItem>
+                  <MenuItem value="GARAGE">🚗 Vaga de Garagem</MenuItem>
+                  <MenuItem value="STORAGE">📦 Depósito</MenuItem>
+                  <MenuItem value="OTHER">📌 Outro</MenuItem>
                 </Select>
               </Grid>
-              <Grid item xs={6}><TextField fullWidth label="Área (m²)" size="small" type="number" value={area} onChange={e => setArea(e.target.value)} /></Grid>
+              <Grid item xs={4}>
+                <TextField fullWidth label="Área (m²)" size="small" type="number" value={area} onChange={e => setArea(e.target.value)} />
+              </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
