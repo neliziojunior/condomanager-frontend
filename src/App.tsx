@@ -27,6 +27,7 @@ import Inventory from './pages/Inventory';
 import Assemblies from './pages/Assemblies';
 import Payments from './pages/Payments';
 import Settings from './pages/Settings';
+import Charges from './pages/Charges';
 import Layout from './components/Layout';
 
 export default function App() {
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/assemblies" element={<Assemblies />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/charges" element={<Charges />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -14,7 +14,7 @@ import {
   Event, Description, ReportProblem, Search, SmartToy, HowToVote, Store, People, Chat,
   AccountBalance, Draw, Inventory as InventoryIcon, Home, MoreHoriz,
   Visibility, Payments, ExpandLess, ExpandMore, Badge as BadgeIcon, Calculate,
-  Settings
+  Settings, Receipt,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -68,6 +68,7 @@ export default function Layout() {
       { key: 'financeiro', label: '💰 Financeiro', icon: <AttachMoney />, items: [
         { text: 'Despesas', icon: <AttachMoney />, path: '/expenses' },
         { text: 'Folha de Pagamento', icon: <Calculate />, path: '/payroll' },
+        { text: 'Cobranças', icon: <Receipt />, path: '/charges' },
         { text: 'Cobranças', icon: <Payments />, path: '/payments' },
         { text: 'Contabilidade', icon: <AccountBalance />, path: '/accounting' },
       ]},
