@@ -69,7 +69,6 @@ export default function Layout() {
         { text: 'Despesas', icon: <AttachMoney />, path: '/expenses' },
         { text: 'Folha de Pagamento', icon: <Calculate />, path: '/payroll' },
         { text: 'Cobranças', icon: <Receipt />, path: '/charges' },
-        { text: 'Cobranças', icon: <Payments />, path: '/payments' },
         { text: 'Contabilidade', icon: <AccountBalance />, path: '/accounting' },
       ]},
       { key: 'social', label: '👥 Social', icon: <Campaign />, items: [

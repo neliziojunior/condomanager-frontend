@@ -25,7 +25,6 @@ import Accounting from './pages/Accounting';
 import Signatures from './pages/Signatures';
 import Inventory from './pages/Inventory';
 import Assemblies from './pages/Assemblies';
-import Payments from './pages/Payments';
 import Settings from './pages/Settings';
 import Charges from './pages/Charges';
 import Layout from './components/Layout';
@@ -62,7 +61,6 @@ export default function App() {
             <Route path="/signatures" element={<Signatures />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/assemblies" element={<Assemblies />} />
-            <Route path="/payments" element={<Payments />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/charges" element={<Charges />} />
           </Route>
