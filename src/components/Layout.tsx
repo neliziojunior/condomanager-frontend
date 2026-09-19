@@ -6,7 +6,7 @@ import {
   AppBar, Toolbar, Typography, Drawer, List, ListItemButton, ListItemText, 
   ListItemIcon, Box, Button, IconButton, useMediaQuery, useTheme,
   Badge, Popover, Avatar, Divider, BottomNavigation, BottomNavigationAction,
-  Paper, Collapse, Chip
+  Paper, Collapse, Chip,
 } from '@mui/material';
 import {
   Dashboard, AttachMoney, Apartment, Build, Inventory, Campaign, ExitToApp,
@@ -14,7 +14,7 @@ import {
   Event, Description, ReportProblem, Search, SmartToy, HowToVote, Store, People, Chat,
   AccountBalance, Draw, Inventory as InventoryIcon, Home, MoreHoriz,
   Visibility, Payments, ExpandLess, ExpandMore, Badge as BadgeIcon, Calculate,
-  Settings, Receipt,
+  Settings, Receipt, AutoAwesome,
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -70,6 +70,7 @@ export default function Layout() {
         { text: 'Folha de Pagamento', icon: <Calculate />, path: '/payroll' },
         { text: 'Cobranças', icon: <Receipt />, path: '/charges' },
         { text: 'Contabilidade', icon: <AccountBalance />, path: '/accounting' },
+        { text: 'Conciliação IA', icon: <AutoAwesome />, path: '/reconciliation' },
       ]},
       { key: 'social', label: '👥 Social', icon: <Campaign />, items: [
         { text: 'Assembleias', icon: <HowToVote />, path: '/assemblies' },

@@ -27,6 +27,7 @@ import Inventory from './pages/Inventory';
 import Assemblies from './pages/Assemblies';
 import Settings from './pages/Settings';
 import Charges from './pages/Charges';
+import Reconciliation from './pages/Reconciliation';
 import Layout from './components/Layout';
 
 export default function App() {
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/assemblies" element={<Assemblies />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/charges" element={<Charges />} />
+            <Route path="/reconciliation" element={<Reconciliation />} />
           </Route>
         </Routes>
       </BrowserRouter>
