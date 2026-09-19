@@ -14,7 +14,7 @@ import {
   Event, Description, ReportProblem, Search, SmartToy, HowToVote, Store, People, Chat,
   AccountBalance, Draw, Inventory as InventoryIcon, Home, MoreHoriz,
   Visibility, Payments, ExpandLess, ExpandMore, Badge as BadgeIcon, Calculate,
-  Settings, Receipt, AutoAwesome,
+  Settings, Receipt, AutoAwesome
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 260;
@@ -69,8 +69,8 @@ export default function Layout() {
         { text: 'Despesas', icon: <AttachMoney />, path: '/expenses' },
         { text: 'Folha de Pagamento', icon: <Calculate />, path: '/payroll' },
         { text: 'Cobranças', icon: <Receipt />, path: '/charges' },
-        { text: 'Contabilidade', icon: <AccountBalance />, path: '/accounting' },
         { text: 'Conciliação IA', icon: <AutoAwesome />, path: '/reconciliation' },
+        { text: 'Contabilidade', icon: <AccountBalance />, path: '/accounting' },
       ]},
       { key: 'social', label: '👥 Social', icon: <Campaign />, items: [
         { text: 'Assembleias', icon: <HowToVote />, path: '/assemblies' },
