@@ -4,21 +4,28 @@ import {
   Typography, Card, CardContent, Grid, Button, Box, Chip, Snackbar,
   Alert, Table, TableBody, TableCell, TableHead, TableRow, Select,
   MenuItem, IconButton, CircularProgress, Dialog, DialogTitle,
-  DialogContent, DialogActions, LinearProgress
+  DialogContent, DialogActions, LinearProgress, TextField
 } from '@mui/material';
 import {
-  CloudUpload, CheckCircle, Delete, Edit, Refresh,
-  TrendingUp, TrendingDown, AutoAwesome
+  CloudUpload, CheckCircle, Delete, Edit,
+  TrendingUp, TrendingDown, Add
 } from '@mui/icons-material';
 
 export default function Reconciliation() {
   const [statements, setStatements] = useState<any[]>([]);
   const [selectedStatement, setSelectedStatement] = useState<any>(null);
   const [showReview, setShowReview] = useState(false);
+  const [showAddEntry, setShowAddEntry] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [manualDate, setManualDate] = useState('');
+  const [manualAmount, setManualAmount] = useState('');
+  const [manualDescription, setManualDescription] = useState('');
+  const [manualType, setManualType] = useState('CREDIT');
+  const [manualCategory, setManualCategory] = useState('');
 
   useEffect(() => {
     loadData();
@@ -39,7 +46,6 @@ export default function Reconciliation() {
 
   async function uploadFile(file: File) {
     setUploading(true);
-
     const formData = new FormData();
     formData.append('file', file);
 
@@ -50,7 +56,7 @@ export default function Reconciliation() {
 
       setSnackbar({
         open: true,
-        message: `✅ ${data.totalEntries} lançamentos extraídos pela IA!`,
+        message: `✅ Extrato processado! Adicione os lançamentos manualmente.`,
         severity: 'success',
       });
 
@@ -97,6 +103,31 @@ export default function Reconciliation() {
     }
   }
 
+  async function addManualEntry(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedStatement) return;
+
+    try {
+      await api.post(`/bank-reconciliation/${selectedStatement.id}/entries`, {
+        date: manualDate,
+        amount: Number(manualAmount),
+        description: manualDescription,
+        type: manualType,
+        categoryId: manualCategory || undefined,
+      });
+
+      setSnackbar({ open: true, message: '✅ Lançamento adicionado!', severity: 'success' });
+      setShowAddEntry(false);
+      setManualDate(''); setManualAmount(''); setManualDescription(''); setManualCategory('');
+
+      const { data } = await api.get(`/bank-reconciliation/${selectedStatement.id}`);
+      setSelectedStatement(data);
+      loadData();
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Erro ao adicionar', severity: 'error' });
+    }
+  }
+
   async function approveAll() {
     if (!selectedStatement) return;
 
@@ -122,32 +153,31 @@ export default function Reconciliation() {
     }
   }
 
+  const entries = selectedStatement?.entries || [];
+  const totalCredits = entries.filter((e: any) => e.type === 'CREDIT').reduce((s: number, e: any) => s + e.amount, 0);
+  const totalDebits = entries.filter((e: any) => e.type === 'DEBIT').reduce((s: number, e: any) => s + e.amount, 0);
+
   return (
     <Box>
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" fontWeight={700}>
-          🏦 Conciliação Bancária IA
-        </Typography>
+        <Typography variant="h6" fontWeight={700}>🏦 Conciliação Bancária</Typography>
         <Typography variant="caption" color="textSecondary">
-          Suba o extrato bancário e a IA extrai e classifica automaticamente
+          Suba o extrato bancário e adicione os lançamentos
         </Typography>
       </Box>
 
-      {/* Upload */}
       <Card sx={{ mb: 3, borderRadius: 3, border: '2px dashed #00A896', bgcolor: '#F0FDF9' }}>
         <CardContent sx={{ p: 4, textAlign: 'center' }}>
           {uploading ? (
             <Box>
               <CircularProgress sx={{ color: '#00A896', mb: 2 }} />
-              <Typography variant="body2">🤖 IA processando extrato...</Typography>
+              <Typography variant="body2">Processando extrato...</Typography>
               <LinearProgress sx={{ mt: 2, borderRadius: 1 }} />
             </Box>
           ) : (
             <>
               <CloudUpload sx={{ fontSize: 60, color: '#00A896', mb: 1 }} />
-              <Typography variant="h6" fontWeight={600}>
-                Arraste o extrato aqui
-              </Typography>
+              <Typography variant="h6" fontWeight={600}>Arraste o extrato aqui</Typography>
               <Typography variant="body2" color="textSecondary" mb={2}>
                 PDF, JPG, PNG, XLSX, CSV, OFX • Até 20MB
               </Typography>
@@ -174,19 +204,15 @@ export default function Reconciliation() {
         </CardContent>
       </Card>
 
-      {/* Lista de Extratos */}
       <Card sx={{ borderRadius: 2 }}>
         <CardContent>
-          <Typography variant="h6" fontWeight={600} mb={2}>
-            📋 Extratos Processados
-          </Typography>
+          <Typography variant="h6" fontWeight={600} mb={2}>📋 Extratos Processados</Typography>
 
           <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Data</TableCell>
-                <TableCell>Banco</TableCell>
-                <TableCell>Período</TableCell>
+                <TableCell>Arquivo</TableCell>
                 <TableCell align="center">Lançamentos</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Ações</TableCell>
@@ -196,9 +222,8 @@ export default function Reconciliation() {
               {statements.map(stmt => (
                 <TableRow key={stmt.id} hover>
                   <TableCell>{new Date(stmt.createdAt).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell>{stmt.bankName || '-'}</TableCell>
                   <TableCell>
-                    {stmt.periodStart && `${new Date(stmt.periodStart).toLocaleDateString('pt-BR')} a ${new Date(stmt.periodEnd).toLocaleDateString('pt-BR')}`}
+                    <Typography variant="body2" fontSize={13}>{stmt.fileName}</Typography>
                   </TableCell>
                   <TableCell align="center">
                     <Chip label={stmt.totalEntries} size="small" />
@@ -232,7 +257,7 @@ export default function Reconciliation() {
               ))}
               {statements.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
+                  <TableCell colSpan={5} align="center">
                     <Typography color="textSecondary" py={3}>
                       Nenhum extrato processado ainda
                     </Typography>
@@ -245,24 +270,57 @@ export default function Reconciliation() {
       </Card>
 
       {/* Modal de Revisão */}
-      <Dialog
-        open={showReview}
-        onClose={() => setShowReview(false)}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog open={showReview} onClose={() => setShowReview(false)} maxWidth="lg" fullWidth>
         <DialogTitle>
           🔍 Revisar Lançamentos
           <Typography variant="caption" display="block" color="textSecondary">
-            A IA sugeriu as categorias. Revise e aprove.
+            {selectedStatement?.fileName}
           </Typography>
         </DialogTitle>
         <DialogContent>
           {selectedStatement && (
             <Box>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <strong>{selectedStatement.totalEntries}</strong> lançamentos extraídos de <strong>{selectedStatement.bankName || 'extrato'}</strong>
-              </Alert>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <Card sx={{ bgcolor: '#F0FDF9', p: 1.5, borderRadius: 2 }}>
+                    <Typography variant="caption" color="textSecondary">ENTRADAS</Typography>
+                    <Typography variant="h6" fontWeight={700} color="success.main">
+                      R$ {totalCredits.toFixed(2)}
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={4}>
+                  <Card sx={{ bgcolor: '#FFF5F5', p: 1.5, borderRadius: 2 }}>
+                    <Typography variant="caption" color="textSecondary">SAÍDAS</Typography>
+                    <Typography variant="h6" fontWeight={700} color="error.main">
+                      R$ {totalDebits.toFixed(2)}
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={4}>
+                  <Card sx={{ bgcolor: '#F7F9FC', p: 1.5, borderRadius: 2 }}>
+                    <Typography variant="caption" color="textSecondary">SALDO</Typography>
+                    <Typography variant="h6" fontWeight={700} color="primary">
+                      R$ {(totalCredits - totalDebits).toFixed(2)}
+                    </Typography>
+                  </Card>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<Add />}
+                  onClick={() => setShowAddEntry(true)}
+                  sx={{ bgcolor: '#00A896', '&:hover': { bgcolor: '#028090' } }}
+                >
+                  ➕ Adicionar Lançamento
+                </Button>
+                <Typography variant="caption" color="textSecondary">
+                  {entries.length} lançamento(s)
+                </Typography>
+              </Box>
 
               <Table size="small">
                 <TableHead>
@@ -270,17 +328,14 @@ export default function Reconciliation() {
                     <TableCell>Data</TableCell>
                     <TableCell>Descrição</TableCell>
                     <TableCell align="right">Valor</TableCell>
-                    <TableCell>Categoria IA</TableCell>
-                    <TableCell>Confiança</TableCell>
+                    <TableCell>Categoria</TableCell>
                     <TableCell>Status</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {selectedStatement.entries?.map((entry: any) => (
+                  {entries.map((entry: any) => (
                     <TableRow key={entry.id} hover>
-                      <TableCell>
-                        {new Date(entry.date).toLocaleDateString('pt-BR')}
-                      </TableCell>
+                      <TableCell>{new Date(entry.date).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {entry.type === 'CREDIT' ? (
@@ -312,31 +367,9 @@ export default function Reconciliation() {
                         >
                           <MenuItem value="">Selecione</MenuItem>
                           {categories.map(c => (
-                            <MenuItem key={c.id} value={c.id}>
-                              {c.name}
-                            </MenuItem>
+                            <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
                           ))}
                         </Select>
-                      </TableCell>
-                      <TableCell>
-                        {entry.aiConfidence && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Chip
-                              icon={<AutoAwesome />}
-                              label={`${(entry.aiConfidence * 100).toFixed(0)}%`}
-                              size="small"
-                              color={
-                                entry.aiConfidence >= 0.9 ? 'success' :
-                                entry.aiConfidence >= 0.7 ? 'warning' :
-                                'error'
-                              }
-                              sx={{ fontSize: 10 }}
-                            />
-                            {entry.aiMatched && (
-                              <Chip label="🎯 Padrão" size="small" variant="outlined" sx={{ fontSize: 10 }} />
-                            )}
-                          </Box>
-                        )}
                       </TableCell>
                       <TableCell>
                         {entry.approved ? (
@@ -347,6 +380,15 @@ export default function Reconciliation() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {entries.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        <Typography color="textSecondary" py={3}>
+                          Nenhum lançamento. Clique em "➕ Adicionar Lançamento".
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </Box>
@@ -358,11 +400,60 @@ export default function Reconciliation() {
             variant="contained"
             startIcon={<CheckCircle />}
             onClick={approveAll}
+            disabled={entries.length === 0}
             sx={{ bgcolor: '#00A896', '&:hover': { bgcolor: '#028090' } }}
           >
             ✅ Aprovar Todos
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Modal Adicionar Manual */}
+      <Dialog open={showAddEntry} onClose={() => setShowAddEntry(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>➕ Adicionar Lançamento Manual</DialogTitle>
+        <form onSubmit={addManualEntry}>
+          <DialogContent>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth label="Data" type="date" size="small"
+                  value={manualDate} onChange={e => setManualDate(e.target.value)}
+                  required InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth label="Valor R$" type="number" size="small"
+                  value={manualAmount} onChange={e => setManualAmount(e.target.value)}
+                  required inputProps={{ step: "0.01", min: "0" }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth label="Descrição" size="small"
+                  value={manualDescription} onChange={e => setManualDescription(e.target.value)}
+                  required
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <Select fullWidth size="small" value={manualType} onChange={e => setManualType(e.target.value)}>
+                  <MenuItem value="CREDIT">📈 Entrada</MenuItem>
+                  <MenuItem value="DEBIT">📉 Saída</MenuItem>
+                </Select>
+              </Grid>
+              <Grid item xs={6}>
+                <Select fullWidth size="small" value={manualCategory} onChange={e => setManualCategory(e.target.value)} displayEmpty>
+                  <MenuItem value="">Sem categoria</MenuItem>
+                  {categories.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                </Select>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowAddEntry(false)}>Cancelar</Button>
+            <Button type="submit" variant="contained">Adicionar</Button>
+          </DialogActions>
+        </form>
       </Dialog>
 
       <Snackbar
