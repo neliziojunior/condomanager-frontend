@@ -7,8 +7,8 @@ import {
   DialogContent, DialogActions, LinearProgress, TextField
 } from '@mui/material';
 import {
-  CloudUpload, CheckCircle, Delete, Edit, Refresh,
-  TrendingUp, TrendingDown, AutoAwesome, Add
+  CloudUpload, CheckCircle, Delete, Edit,
+  TrendingUp, TrendingDown, Add
 } from '@mui/icons-material';
 
 export default function Reconciliation() {
@@ -21,7 +21,6 @@ export default function Reconciliation() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Manual entry form
   const [manualDate, setManualDate] = useState('');
   const [manualAmount, setManualAmount] = useState('');
   const [manualDescription, setManualDescription] = useState('');
@@ -47,7 +46,6 @@ export default function Reconciliation() {
 
   async function uploadFile(file: File) {
     setUploading(true);
-
     const formData = new FormData();
     formData.append('file', file);
 
@@ -162,15 +160,12 @@ export default function Reconciliation() {
   return (
     <Box>
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" fontWeight={700}>
-          🏦 Conciliação Bancária
-        </Typography>
+        <Typography variant="h6" fontWeight={700}>🏦 Conciliação Bancária</Typography>
         <Typography variant="caption" color="textSecondary">
           Suba o extrato bancário e adicione os lançamentos
         </Typography>
       </Box>
 
-      {/* Upload */}
       <Card sx={{ mb: 3, borderRadius: 3, border: '2px dashed #00A896', bgcolor: '#F0FDF9' }}>
         <CardContent sx={{ p: 4, textAlign: 'center' }}>
           {uploading ? (
@@ -182,9 +177,7 @@ export default function Reconciliation() {
           ) : (
             <>
               <CloudUpload sx={{ fontSize: 60, color: '#00A896', mb: 1 }} />
-              <Typography variant="h6" fontWeight={600}>
-                Arraste o extrato aqui
-              </Typography>
+              <Typography variant="h6" fontWeight={600}>Arraste o extrato aqui</Typography>
               <Typography variant="body2" color="textSecondary" mb={2}>
                 PDF, JPG, PNG, XLSX, CSV, OFX • Até 20MB
               </Typography>
@@ -211,12 +204,9 @@ export default function Reconciliation() {
         </CardContent>
       </Card>
 
-      {/* Lista de Extratos */}
       <Card sx={{ borderRadius: 2 }}>
         <CardContent>
-          <Typography variant="h6" fontWeight={600} mb={2}>
-            📋 Extratos Processados
-          </Typography>
+          <Typography variant="h6" fontWeight={600} mb={2}>📋 Extratos Processados</Typography>
 
           <Table size="small">
             <TableHead>
@@ -280,12 +270,7 @@ export default function Reconciliation() {
       </Card>
 
       {/* Modal de Revisão */}
-      <Dialog
-        open={showReview}
-        onClose={() => setShowReview(false)}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog open={showReview} onClose={() => setShowReview(false)} maxWidth="lg" fullWidth>
         <DialogTitle>
           🔍 Revisar Lançamentos
           <Typography variant="caption" display="block" color="textSecondary">
@@ -295,7 +280,6 @@ export default function Reconciliation() {
         <DialogContent>
           {selectedStatement && (
             <Box>
-              {/* Resumo */}
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={4}>
                   <Card sx={{ bgcolor: '#F0FDF9', p: 1.5, borderRadius: 2 }}>
@@ -323,17 +307,18 @@ export default function Reconciliation() {
                 </Grid>
               </Grid>
 
-              <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
+              <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   size="small"
                   startIcon={<Add />}
                   onClick={() => setShowAddEntry(true)}
+                  sx={{ bgcolor: '#00A896', '&:hover': { bgcolor: '#028090' } }}
                 >
-                  Adicionar Lançamento Manual
+                  ➕ Adicionar Lançamento
                 </Button>
                 <Typography variant="caption" color="textSecondary">
-                  ({entries.length} lançamento(s) adicionado(s))
+                  {entries.length} lançamento(s)
                 </Typography>
               </Box>
 
@@ -350,9 +335,7 @@ export default function Reconciliation() {
                 <TableBody>
                   {entries.map((entry: any) => (
                     <TableRow key={entry.id} hover>
-                      <TableCell>
-                        {new Date(entry.date).toLocaleDateString('pt-BR')}
-                      </TableCell>
+                      <TableCell>{new Date(entry.date).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {entry.type === 'CREDIT' ? (
@@ -401,7 +384,7 @@ export default function Reconciliation() {
                     <TableRow>
                       <TableCell colSpan={5} align="center">
                         <Typography color="textSecondary" py={3}>
-                          Nenhum lançamento. Clique em "Adicionar Lançamento Manual".
+                          Nenhum lançamento. Clique em "➕ Adicionar Lançamento".
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -433,61 +416,35 @@ export default function Reconciliation() {
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <TextField
-                  fullWidth
-                  label="Data"
-                  type="date"
-                  size="small"
-                  value={manualDate}
-                  onChange={e => setManualDate(e.target.value)}
-                  required
-                  InputLabelProps={{ shrink: true }}
+                  fullWidth label="Data" type="date" size="small"
+                  value={manualDate} onChange={e => setManualDate(e.target.value)}
+                  required InputLabelProps={{ shrink: true }}
                 />
               </Grid>
               <Grid item xs={6}>
                 <TextField
-                  fullWidth
-                  label="Valor R$"
-                  type="number"
-                  size="small"
-                  value={manualAmount}
-                  onChange={e => setManualAmount(e.target.value)}
-                  required
-                  inputProps={{ step: "0.01", min: "0" }}
+                  fullWidth label="Valor R$" type="number" size="small"
+                  value={manualAmount} onChange={e => setManualAmount(e.target.value)}
+                  required inputProps={{ step: "0.01", min: "0" }}
                 />
               </Grid>
               <Grid item xs={12}>
                 <TextField
-                  fullWidth
-                  label="Descrição"
-                  size="small"
-                  value={manualDescription}
-                  onChange={e => setManualDescription(e.target.value)}
+                  fullWidth label="Descrição" size="small"
+                  value={manualDescription} onChange={e => setManualDescription(e.target.value)}
                   required
                 />
               </Grid>
               <Grid item xs={6}>
-                <Select
-                  fullWidth
-                  size="small"
-                  value={manualType}
-                  onChange={e => setManualType(e.target.value)}
-                >
+                <Select fullWidth size="small" value={manualType} onChange={e => setManualType(e.target.value)}>
                   <MenuItem value="CREDIT">📈 Entrada</MenuItem>
                   <MenuItem value="DEBIT">📉 Saída</MenuItem>
                 </Select>
               </Grid>
               <Grid item xs={6}>
-                <Select
-                  fullWidth
-                  size="small"
-                  value={manualCategory}
-                  onChange={e => setManualCategory(e.target.value)}
-                  displayEmpty
-                >
+                <Select fullWidth size="small" value={manualCategory} onChange={e => setManualCategory(e.target.value)} displayEmpty>
                   <MenuItem value="">Sem categoria</MenuItem>
-                  {categories.map(c => (
-                    <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-                  ))}
+                  {categories.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
                 </Select>
               </Grid>
             </Grid>
