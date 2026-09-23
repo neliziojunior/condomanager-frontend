@@ -21,6 +21,7 @@ export default function Units() {
   const [block, setBlock] = useState('');
   const [floor, setFloor] = useState('');
   const [type, setType] = useState('APARTMENT');
+  const [parkingSpots, setParkingSpots] = useState(''); // ✅ NOVO: Vagas
 
   // Resident form
   const [residentName, setResidentName] = useState('');
@@ -63,7 +64,7 @@ export default function Units() {
 
   function openCreate() {
     setEditingUnit(null);
-    setNumber(''); setBlock(''); setFloor(''); setType('APARTMENT');
+    setNumber(''); setBlock(''); setFloor(''); setType('APARTMENT'); setParkingSpots('');
     setShowUnitForm(true);
   }
 
@@ -73,6 +74,7 @@ export default function Units() {
     setBlock(unit.block || '');
     setFloor(unit.floor?.toString() || '');
     setType(unit.type || 'APARTMENT');
+    setParkingSpots(unit.parkingSpots?.toString() || '');
     setShowUnitForm(true);
   }
 
@@ -83,6 +85,7 @@ export default function Units() {
       block: block || undefined,
       floor: floor ? Number(floor) : undefined, 
       type, 
+      parkingSpots: parkingSpots ? Number(parkingSpots) : 0,
     };
 
     try {
@@ -181,6 +184,7 @@ export default function Units() {
                     <Typography variant="caption" color="textSecondary">
                       {getTypeLabel(unit.type)}
                       {unit.floor && ` • ${unit.floor}º andar`}
+                      {unit.parkingSpots > 0 && ` • 🚗 ${unit.parkingSpots} vaga(s)`}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -258,7 +262,7 @@ export default function Units() {
               <Grid item xs={3}>
                 <TextField fullWidth label="Andar" size="small" type="number" value={floor} onChange={e => setFloor(e.target.value)} />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={8}>
                 <Select fullWidth size="small" value={type} onChange={e => setType(e.target.value)}>
                   <MenuItem value="APARTMENT">🏢 Apartamento</MenuItem>
                   <MenuItem value="STUDIO">🏠 Studio / Kitnet</MenuItem>
@@ -269,6 +273,19 @@ export default function Units() {
                   <MenuItem value="STORAGE">📦 Depósito</MenuItem>
                   <MenuItem value="OTHER">📌 Outro</MenuItem>
                 </Select>
+              </Grid>
+              {/* ✅ VAGAS DE GARAGEM */}
+              <Grid item xs={4}>
+                <TextField 
+                  fullWidth 
+                  label="Vagas Garagem" 
+                  size="small" 
+                  type="number" 
+                  value={parkingSpots} 
+                  onChange={e => setParkingSpots(e.target.value)} 
+                  placeholder="1"
+                  inputProps={{ min: 0 }}
+                />
               </Grid>
             </Grid>
           </DialogContent>
