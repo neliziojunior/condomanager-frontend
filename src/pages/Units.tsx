@@ -21,7 +21,6 @@ export default function Units() {
   const [block, setBlock] = useState('');
   const [floor, setFloor] = useState('');
   const [type, setType] = useState('APARTMENT');
-  const [area, setArea] = useState('');
 
   // Resident form
   const [residentName, setResidentName] = useState('');
@@ -64,7 +63,7 @@ export default function Units() {
 
   function openCreate() {
     setEditingUnit(null);
-    setNumber(''); setBlock(''); setFloor(''); setType('APARTMENT'); setArea('');
+    setNumber(''); setBlock(''); setFloor(''); setType('APARTMENT');
     setShowUnitForm(true);
   }
 
@@ -74,7 +73,6 @@ export default function Units() {
     setBlock(unit.block || '');
     setFloor(unit.floor?.toString() || '');
     setType(unit.type || 'APARTMENT');
-    setArea(unit.area?.toString() || '');
     setShowUnitForm(true);
   }
 
@@ -85,7 +83,6 @@ export default function Units() {
       block: block || undefined,
       floor: floor ? Number(floor) : undefined, 
       type, 
-      area: area ? Number(area) : undefined 
     };
 
     try {
@@ -184,7 +181,6 @@ export default function Units() {
                     <Typography variant="caption" color="textSecondary">
                       {getTypeLabel(unit.type)}
                       {unit.floor && ` • ${unit.floor}º andar`}
-                      {unit.area && ` • ${unit.area}m²`}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -262,7 +258,7 @@ export default function Units() {
               <Grid item xs={3}>
                 <TextField fullWidth label="Andar" size="small" type="number" value={floor} onChange={e => setFloor(e.target.value)} />
               </Grid>
-              <Grid item xs={8}>
+              <Grid item xs={12}>
                 <Select fullWidth size="small" value={type} onChange={e => setType(e.target.value)}>
                   <MenuItem value="APARTMENT">🏢 Apartamento</MenuItem>
                   <MenuItem value="STUDIO">🏠 Studio / Kitnet</MenuItem>
@@ -273,9 +269,6 @@ export default function Units() {
                   <MenuItem value="STORAGE">📦 Depósito</MenuItem>
                   <MenuItem value="OTHER">📌 Outro</MenuItem>
                 </Select>
-              </Grid>
-              <Grid item xs={4}>
-                <TextField fullWidth label="Área (m²)" size="small" type="number" value={area} onChange={e => setArea(e.target.value)} />
               </Grid>
             </Grid>
           </DialogContent>
