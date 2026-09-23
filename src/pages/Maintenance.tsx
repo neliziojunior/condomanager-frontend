@@ -3,9 +3,9 @@ import api from '../services/api';
 import {
   Typography, Card, CardContent, Grid, TextField, Button, Select, MenuItem,
   Table, TableBody, TableCell, TableHead, TableRow, Box, Chip, IconButton,
-  Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Tooltip
+  Dialog, DialogTitle, DialogContent, DialogActions, Snackbar
 } from '@mui/material';
-import { Add, Edit, Delete, Build, Warning, PriorityHigh } from '@mui/icons-material';
+import { Add, Edit, Delete } from '@mui/icons-material';
 
 const STATUS_COLORS: any = {
   OPEN: { color: 'error', label: 'Aberto' },
@@ -23,7 +23,6 @@ const PRIORITY_COLORS: any = {
 
 export default function Maintenance() {
   const [requests, setRequests] = useState<any[]>([]);
-  const [units, setUnits] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
@@ -32,7 +31,6 @@ export default function Maintenance() {
   // Form
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [unitId, setUnitId] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
 
   useEffect(() => {
@@ -41,12 +39,10 @@ export default function Maintenance() {
 
   async function loadData() {
     try {
-      const [reqRes, unitRes] = await Promise.all([
-        api.get('/maintenance', { params: { status: filterStatus, priority: filterPriority } }),
-        api.get('/units')
-      ]);
+      const reqRes = await api.get('/maintenance', {
+        params: { status: filterStatus, priority: filterPriority }
+      });
       setRequests(reqRes.data);
-      setUnits(unitRes.data);
     } catch (error) {
       console.error('Erro ao carregar:', error);
     }
@@ -55,10 +51,10 @@ export default function Maintenance() {
   async function createRequest(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await api.post('/maintenance', { title, description, unitId, priority });
+      await api.post('/maintenance', { title, description, priority });
       setSnackbar({ open: true, message: 'Chamado criado!', severity: 'success' });
       setShowForm(false);
-      setTitle(''); setDescription(''); setUnitId(''); setPriority('MEDIUM');
+      setTitle(''); setDescription(''); setPriority('MEDIUM');
       loadData();
     } catch (error) {
       setSnackbar({ open: true, message: 'Erro ao criar chamado', severity: 'error' });
@@ -81,9 +77,9 @@ export default function Maintenance() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h4">🔧 Chamados de Manutenção</Typography>
-          <Typography variant="body2" color="textSecondary">
-            Gerencie solicitações de reparos e serviços
+          <Typography variant="h6" fontWeight={700}>🔧 Chamados de Manutenção</Typography>
+          <Typography variant="caption" color="textSecondary">
+            Gerencie solicitações de reparos do condomínio
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<Add />} onClick={() => setShowForm(true)}>
@@ -96,7 +92,7 @@ export default function Maintenance() {
         <CardContent>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={4}>
-              <Select fullWidth value={filterStatus} onChange={e => setFilterStatus(e.target.value)} displayEmpty>
+              <Select fullWidth size="small" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} displayEmpty>
                 <MenuItem value="">Todos os status</MenuItem>
                 <MenuItem value="OPEN">Abertos</MenuItem>
                 <MenuItem value="IN_PROGRESS">Em andamento</MenuItem>
@@ -105,7 +101,7 @@ export default function Maintenance() {
               </Select>
             </Grid>
             <Grid item xs={12} md={4}>
-              <Select fullWidth value={filterPriority} onChange={e => setFilterPriority(e.target.value)} displayEmpty>
+              <Select fullWidth size="small" value={filterPriority} onChange={e => setFilterPriority(e.target.value)} displayEmpty>
                 <MenuItem value="">Todas prioridades</MenuItem>
                 <MenuItem value="LOW">Baixa</MenuItem>
                 <MenuItem value="MEDIUM">Média</MenuItem>
@@ -114,22 +110,22 @@ export default function Maintenance() {
               </Select>
             </Grid>
             <Grid item xs={12} md={4}>
-              <Typography variant="body2" color="textSecondary">
-                {requests.length} chamado(s) encontrado(s)
+              <Typography variant="caption" color="textSecondary">
+                {requests.length} chamado(s)
               </Typography>
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      {/* Tabela de chamados */}
+      {/* Tabela */}
       <Card>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>Prioridade</TableCell>
               <TableCell>Título</TableCell>
-              <TableCell>Unidade</TableCell>
+              <TableCell>Local</TableCell>
               <TableCell>Solicitante</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Ações</TableCell>
@@ -139,20 +135,23 @@ export default function Maintenance() {
             {requests.map(req => (
               <TableRow key={req.id} hover>
                 <TableCell>
-                  <Tooltip title={PRIORITY_COLORS[req.priority]?.label}>
-                    <Chip 
-                      icon={<Warning />}
-                      label={PRIORITY_COLORS[req.priority]?.icon}
-                      color={PRIORITY_COLORS[req.priority]?.color}
-                      size="small"
-                    />
-                  </Tooltip>
+                  <Chip
+                    label={`${PRIORITY_COLORS[req.priority]?.icon} ${PRIORITY_COLORS[req.priority]?.label}`}
+                    color={PRIORITY_COLORS[req.priority]?.color}
+                    size="small"
+                  />
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" fontWeight="bold">{req.title}</Typography>
                   <Typography variant="caption" color="textSecondary">{req.description}</Typography>
                 </TableCell>
-                <TableCell>{req.unit?.number}</TableCell>
+                <TableCell>
+                  {req.unit?.number ? (
+                    <Chip label={`Unid. ${req.unit.number}`} size="small" variant="outlined" />
+                  ) : (
+                    <Chip label="🏢 Área Comum" size="small" color="primary" variant="outlined" />
+                  )}
+                </TableCell>
                 <TableCell>{req.requester?.name}</TableCell>
                 <TableCell>
                   <Select
@@ -194,20 +193,12 @@ export default function Maintenance() {
           <DialogContent>
             <Grid container spacing={2}>
               <Grid item xs={12}>
-                <TextField fullWidth label="Título" value={title} onChange={e => setTitle(e.target.value)} required placeholder="Ex: Vazamento na torneira" />
+                <TextField fullWidth label="Título" value={title} onChange={e => setTitle(e.target.value)} required placeholder="Ex: Vazamento na área comum" />
               </Grid>
               <Grid item xs={12}>
                 <TextField fullWidth label="Descrição" value={description} onChange={e => setDescription(e.target.value)} multiline rows={3} placeholder="Detalhe o problema..." />
               </Grid>
-              <Grid item xs={6}>
-                <Select fullWidth value={unitId} onChange={e => setUnitId(e.target.value)} displayEmpty required>
-                  <MenuItem value="">Selecione a unidade</MenuItem>
-                  {units.map(u => (
-                    <MenuItem key={u.id} value={u.id}>Unidade {u.number}</MenuItem>
-                  ))}
-                </Select>
-              </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={12}>
                 <Select fullWidth value={priority} onChange={e => setPriority(e.target.value)}>
                   <MenuItem value="LOW">🟢 Baixa</MenuItem>
                   <MenuItem value="MEDIUM">🟡 Média</MenuItem>
@@ -224,12 +215,14 @@ export default function Maintenance() {
         </form>
       </Dialog>
 
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000} 
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      />
+      >
+        <Box>{snackbar.message}</Box>
+      </Snackbar>
     </Box>
   );
 }
