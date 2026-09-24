@@ -1,22 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import {
   Typography, Card, CardContent, Grid, TextField, Button, Box, Chip,
   Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Table,
-  TableBody, TableCell, TableHead, TableRow, Avatar
+  TableBody, TableCell, TableHead, TableRow, Avatar, Alert
 } from '@mui/material';
-import { Add, HowToVote, CheckCircle, Cancel, People, Download, Edit } from '@mui/icons-material';
+import { Add, CheckCircle, Cancel, People, Download, Edit, Draw } from '@mui/icons-material';
 
 export default function Assemblies() {
   const [assemblies, setAssemblies] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showPresence, setShowPresence] = useState<any>(null);
+  const [showSignature, setShowSignature] = useState<any>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const API_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3333'
@@ -59,8 +63,73 @@ export default function Assemblies() {
   async function finishAssembly(assemblyId: string) {
     if (!confirm('Finalizar esta assembleia? Os moradores poderão assinar a ata.')) return;
     await api.post(`/assemblies/${assemblyId}/finish`);
-    setSnackbar({ open: true, message: '✅ Assembleia finalizada! Ata pronta para assinatura.', severity: 'success' });
+    setSnackbar({ open: true, message: '✅ Assembleia finalizada!', severity: 'success' });
     loadData();
+  }
+
+  async function openSignatureModal(assembly: any) {
+    try {
+      const { data } = await api.get(`/assemblies/${assembly.id}/check-signature`);
+      if (data.signed) {
+        setSnackbar({ open: true, message: 'Você já assinou esta ata!', severity: 'warning' });
+        return;
+      }
+      setShowSignature(assembly);
+      setTimeout(clearCanvas, 100);
+    } catch (error) {
+      setShowSignature(assembly);
+    }
+  }
+
+  function startDrawing(e: React.MouseEvent) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    setIsDrawing(true);
+  }
+
+  function draw(e: React.MouseEvent) {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    ctx.strokeStyle = '#1A1A2E';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  function stopDrawing() {
+    setIsDrawing(false);
+  }
+
+  function clearCanvas() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  async function saveSignature() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const signatureData = canvas.toDataURL('image/png');
+
+    try {
+      await api.post(`/assemblies/${showSignature.id}/sign`, { signatureData });
+      setSnackbar({ open: true, message: '✍️ Ata assinada!', severity: 'success' });
+      setShowSignature(null);
+      clearCanvas();
+      loadData();
+    } catch (error: any) {
+      setSnackbar({ open: true, message: error.response?.data?.message || 'Erro ao assinar', severity: 'error' });
+    }
   }
 
   return (
@@ -123,7 +192,9 @@ export default function Assemblies() {
                 <Box mt={2} display="flex" gap={2} flexWrap="wrap">
                   <Chip icon={<People />} label={`${ass.confirmations?.filter((c: any) => c.status === 'PRESENT').length || 0} presentes`} size="small" color="success" variant="outlined" />
                   <Chip icon={<Cancel />} label={`${ass.confirmations?.filter((c: any) => c.status === 'ABSENT').length || 0} ausentes`} size="small" color="error" variant="outlined" />
-                  <Chip label={`${ass.confirmations?.filter((c: any) => c.status === 'PENDING').length || 0} pendentes`} size="small" variant="outlined" />
+                  {ass.signatures && (ass.signatures as any[]).length > 0 && (
+                    <Chip icon={<Draw />} label={`${(ass.signatures as any[]).length} assinaturas`} size="small" color="primary" variant="outlined" />
+                  )}
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
                   <Button size="small" onClick={() => loadPresenceList(ass.id)}>Ver Lista</Button>
@@ -133,6 +204,11 @@ export default function Assemblies() {
                   {ass.status !== 'FINISHED' && (
                     <Button size="small" startIcon={<Edit />} onClick={() => finishAssembly(ass.id)} color="warning" variant="outlined">
                       ✍️ Finalizar
+                    </Button>
+                  )}
+                  {ass.status === 'FINISHED' && (
+                    <Button size="small" startIcon={<Draw />} onClick={() => openSignatureModal(ass)} color="success" variant="contained">
+                      ✍️ Assinar Ata
                     </Button>
                   )}
                 </Box>
@@ -196,6 +272,59 @@ export default function Assemblies() {
           </Table>
         </DialogContent>
         <DialogActions><Button onClick={() => setShowPresence(null)}>Fechar</Button></DialogActions>
+      </Dialog>
+
+      {/* Modal de Assinatura Digital */}
+      <Dialog open={!!showSignature} onClose={() => setShowSignature(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>✍️ Assinar Ata</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="textSecondary" mb={2}>
+            Assine abaixo com o mouse (ou dedo em dispositivos touch):
+          </Typography>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {showSignature?.title}
+          </Alert>
+          <Box
+            sx={{
+              border: '2px dashed #00A896',
+              borderRadius: 2,
+              bgcolor: '#F7F9FC',
+              p: 1,
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <canvas
+              ref={canvasRef}
+              width={500}
+              height={200}
+              style={{
+                cursor: 'crosshair',
+                borderRadius: 8,
+                background: 'white',
+                maxWidth: '100%',
+              }}
+              onMouseDown={startDrawing}
+              onMouseMove={draw}
+              onMouseUp={stopDrawing}
+              onMouseLeave={stopDrawing}
+            />
+          </Box>
+          <Button size="small" onClick={clearCanvas} sx={{ mt: 1 }}>
+            🗑️ Limpar
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowSignature(null)}>Cancelar</Button>
+          <Button
+            variant="contained"
+            onClick={saveSignature}
+            startIcon={<CheckCircle />}
+            sx={{ bgcolor: '#00A896', '&:hover': { bgcolor: '#028090' } }}
+          >
+            Confirmar Assinatura
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} message={snackbar.message} />
