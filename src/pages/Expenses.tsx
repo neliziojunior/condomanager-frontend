@@ -4,52 +4,57 @@ import {
   Typography, Card, CardContent, Grid, TextField, Button, Select, MenuItem,
   Table, TableBody, TableCell, TableHead, TableRow, Box, Chip, IconButton,
   InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, Alert,
-  Snackbar, Tooltip, Checkbox
+  Snackbar, Tooltip, Checkbox, FormControlLabel, Switch, Divider, Tabs, Tab
 } from '@mui/material';
 import {
   Search, AttachFile, CheckCircle, PictureAsPdf, Download,
-  Edit, Delete, AutoAwesome, CameraAlt
+  Edit, Delete, AutoAwesome, CameraAlt, TrendingUp, TrendingDown,
+  AccountBalance, Warning, Add, FilterList, Refresh
 } from '@mui/icons-material';
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showInvoices, setShowInvoices] = useState(false);
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [selectedInvoices, setSelectedInvoices] = useState<number[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [tab, setTab] = useState(0);
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [installments, setInstallments] = useState(1);
   const [aiSuggestion, setAiSuggestion] = useState<any>(null);
 
-  // ✅ URL dinâmica para produção e desenvolvimento
   const API_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3333'
     : 'https://condpro.onrender.com';
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [filterMonth]);
 
   async function loadData() {
     try {
-      const [condRes, expRes] = await Promise.all([
+      const [condRes, expRes, sumRes] = await Promise.all([
         api.get('/condominium/me'),
-        api.get('/expenses')
+        api.get('/expenses'),
+        api.get('/expenses/summary', { params: { month: filterMonth } }),
       ]);
-      const expenseCategories = condRes.data.categories.filter((c: any) => c.type === 'EXPENSE');
-      setCategories(expenseCategories);
+      setCategories(condRes.data.categories.filter((c: any) => c.type === 'EXPENSE'));
       setExpenses(expRes.data);
+      setSummary(sumRes.data);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('Erro:', error);
     }
   }
 
@@ -62,74 +67,22 @@ export default function Expenses() {
     } catch (error) {}
   }
 
-  async function scanReceipt(file: File) {
-    setScanning(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const { data } = await api.post('/expenses/ocr', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      if (data.success) {
-        setSnackbar({ open: true, message: `Recibo processado!`, severity: 'success' });
-        loadData();
-      } else {
-        setSnackbar({ open: true, message: 'Não foi possível ler o recibo', severity: 'error' });
-      }
-    } catch (error) {
-      setSnackbar({ open: true, message: 'Erro ao processar recibo', severity: 'error' });
-    }
-    setScanning(false);
-  }
-
-  async function fetchInvoices() {
-    try {
-      const { data } = await api.get('/expenses/fetch-invoices');
-      setInvoices(data.invoices);
-      setSelectedInvoices(data.invoices.map((_: any, i: number) => i));
-      setShowInvoices(true);
-    } catch (error) {
-      setSnackbar({ open: true, message: 'Erro ao buscar notas', severity: 'error' });
-    }
-  }
-
-  async function importInvoices() {
-    const toImport = selectedInvoices.map(i => invoices[i]).filter(inv => inv.categoryId);
-    if (toImport.length === 0) {
-      setSnackbar({ open: true, message: 'Nenhuma nota selecionada', severity: 'warning' });
-      return;
-    }
-    try {
-      await api.post('/expenses/import-invoices', { invoices: toImport });
-      setSnackbar({ open: true, message: `${toImport.length} nota(s) importada(s)!`, severity: 'success' });
-      setShowInvoices(false);
-      loadData();
-    } catch (error) {
-      setSnackbar({ open: true, message: 'Erro ao importar', severity: 'error' });
-    }
-  }
-
-  function toggleInvoice(index: number) {
-    setSelectedInvoices(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
-  }
-
   function openEditModal(exp: any) {
     setEditingId(exp.id);
     setDescription(exp.description);
     setAmount(exp.amount.toString());
     setDueDate(new Date(exp.dueDate).toISOString().split('T')[0]);
     setCategoryId(exp.categoryId || '');
+    setNotes(exp.notes || '');
     setShowForm(true);
   }
 
   function closeModal() {
     setShowForm(false);
     setEditingId(null);
-    setDescription('');
-    setAmount('');
-    setDueDate('');
-    setCategoryId('');
-    setAiSuggestion(null);
+    setDescription(''); setAmount(''); setDueDate('');
+    setCategoryId(''); setNotes(''); setIsRecurring(false);
+    setInstallments(1); setAiSuggestion(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -139,16 +92,24 @@ export default function Expenses() {
       return;
     }
     try {
+      const payload = {
+        description, amount: Number(amount), dueDate, categoryId, notes,
+        isRecurring,
+        ...(installments > 1 && { totalInstallments: installments }),
+      };
+
       if (editingId) {
-        await api.put(`/expenses/${editingId}`, {
-          description, amount: Number(amount), dueDate, categoryId
-        });
-        setSnackbar({ open: true, message: 'Atualizada!', severity: 'success' });
+        await api.put(`/expenses/${editingId}`, payload);
+        setSnackbar({ open: true, message: '✅ Atualizada!', severity: 'success' });
       } else {
-        await api.post('/expenses', {
-          description, amount: Number(amount), dueDate, categoryId
+        await api.post('/expenses', payload);
+        setSnackbar({
+          open: true,
+          message: installments > 1
+            ? `✅ ${installments} parcelas criadas!`
+            : '✅ Criada!',
+          severity: 'success',
         });
-        setSnackbar({ open: true, message: 'Criada!', severity: 'success' });
       }
       closeModal();
       loadData();
@@ -168,7 +129,7 @@ export default function Expenses() {
     try {
       setUploadingId(expenseId);
       await uploadFile(expenseId, file);
-      setSnackbar({ open: true, message: 'Anexado!', severity: 'success' });
+      setSnackbar({ open: true, message: 'Comprovante anexado!', severity: 'success' });
       loadData();
     } catch (error) {
       setSnackbar({ open: true, message: 'Erro', severity: 'error' });
@@ -179,7 +140,7 @@ export default function Expenses() {
 
   async function markAsPaid(expenseId: string) {
     await api.post(`/expenses/${expenseId}/mark-paid`, { paymentDate: new Date().toISOString() });
-    setSnackbar({ open: true, message: 'Paga!', severity: 'success' });
+    setSnackbar({ open: true, message: '✅ Paga!', severity: 'success' });
     loadData();
   }
 
@@ -187,59 +148,135 @@ export default function Expenses() {
     const m = exp.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
               exp.category?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const s = filterStatus === 'ALL' || exp.status === filterStatus;
-    return m && s;
+    const c = !filterCategory || exp.categoryId === filterCategory;
+    return m && s && c;
   });
 
   return (
     <Box>
+      {/* Cabeçalho */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18 }}>💰 Despesas</Typography>
+        <Box>
+          <Typography variant="h6" fontWeight={700}>💰 Despesas</Typography>
+          <Typography variant="caption" color="textSecondary">
+            Controle completo das despesas do condomínio
+          </Typography>
+        </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="outlined" component="label" startIcon={<CameraAlt />} disabled={scanning} size="small" color="secondary">
-            📸 Recibo
-            <input type="file" hidden accept="image/*" capture="environment" onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) scanReceipt(file);
-            }} />
-          </Button>
-          <Button variant="outlined" size="small" startIcon={<AutoAwesome />} onClick={fetchInvoices} color="secondary">🔍 Notas</Button>
           <Button
-            variant="outlined"
-            size="small"
-            startIcon={<Download />}
+            variant="outlined" size="small" startIcon={<Download />}
             onClick={() => window.open(`${API_URL}/expenses/report/pdf`, '_blank')}
           >
             PDF
           </Button>
-          <Button variant="contained" size="small" onClick={() => { setEditingId(null); setShowForm(true); }}>
-            + Nova
+          <Button
+            variant="contained" size="small"
+            onClick={() => { setEditingId(null); setShowForm(true); }}
+            startIcon={<Add />}
+            sx={{ bgcolor: '#00A896' }}
+          >
+            Nova Despesa
           </Button>
         </Box>
       </Box>
 
+      {/* Cards de Resumo */}
+      {summary && (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={6} sm={3}>
+            <Card sx={{ borderRadius: 2, bgcolor: '#F0FDF9', p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <AccountBalance sx={{ color: '#00A896' }} />
+                <Typography variant="caption" color="textSecondary">TOTAL DO MÊS</Typography>
+              </Box>
+              <Typography variant="h6" fontWeight={700} color="#00A896">
+                R$ {summary.total.toFixed(2)}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                {summary.count} lançamento(s)
+              </Typography>
+            </Card>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Card sx={{ borderRadius: 2, bgcolor: '#F0FDF9', p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <CheckCircle sx={{ color: '#02C39A' }} />
+                <Typography variant="caption" color="textSecondary">PAGAS</Typography>
+              </Box>
+              <Typography variant="h6" fontWeight={700} color="#02C39A">
+                R$ {summary.paid.toFixed(2)}
+              </Typography>
+            </Card>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Card sx={{ borderRadius: 2, bgcolor: '#FFFBF0', p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Warning sx={{ color: '#F0A500' }} />
+                <Typography variant="caption" color="textSecondary">PENDENTES</Typography>
+              </Box>
+              <Typography variant="h6" fontWeight={700} color="#F0A500">
+                R$ {summary.pending.toFixed(2)}
+              </Typography>
+            </Card>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Card sx={{ borderRadius: 2, bgcolor: '#FFF5F5', p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <TrendingDown sx={{ color: '#E63946' }} />
+                <Typography variant="caption" color="textSecondary">VENCIDAS</Typography>
+              </Box>
+              <Typography variant="h6" fontWeight={700} color="#E63946">
+                R$ {summary.overdue.toFixed(2)}
+              </Typography>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
+      {/* Filtros */}
       <Card sx={{ mb: 3, borderRadius: 2 }}>
         <CardContent sx={{ p: 2 }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <TextField fullWidth size="small" placeholder="Buscar..." value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }} />
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth size="small" type="month"
+                value={filterMonth}
+                onChange={e => setFilterMonth(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
             <Grid item xs={12} md={3}>
-              <Select fullWidth size="small" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+              <TextField
+                fullWidth size="small" placeholder="Buscar..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> }}
+              />
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <Select fullWidth size="small" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} displayEmpty>
                 <MenuItem value="ALL">Todos</MenuItem>
                 <MenuItem value="PENDING">Pendentes</MenuItem>
                 <MenuItem value="PAID">Pagas</MenuItem>
                 <MenuItem value="OVERDUE">Vencidas</MenuItem>
               </Select>
             </Grid>
-            <Grid item xs={12} md={3}>
-              <Typography variant="caption" color="textSecondary">{filteredExpenses.length} despesa(s)</Typography>
+            <Grid item xs={12} md={2}>
+              <Select fullWidth size="small" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} displayEmpty>
+                <MenuItem value="">Todas categorias</MenuItem>
+                {categories.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+              </Select>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <Typography variant="caption" color="textSecondary">
+                {filteredExpenses.length} despesa(s)
+              </Typography>
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
+      {/* Tabela */}
       <Card sx={{ borderRadius: 2 }}>
         <Table size="small">
           <TableHead>
@@ -257,15 +294,26 @@ export default function Expenses() {
             {filteredExpenses.map(exp => (
               <TableRow key={exp.id} hover>
                 <TableCell>
-                  <Typography variant="body2" fontWeight={600} fontSize={12}>{exp.description}</Typography>
-                  {exp.documentUrl && (
-                    <Button size="small" href={`${API_URL}${exp.documentUrl}`} target="_blank" startIcon={<PictureAsPdf />} sx={{ mt: 0.5, fontSize: 10 }}>
-                      Ver
-                    </Button>
+                  <Typography variant="body2" fontWeight={600} fontSize={12}>
+                    {exp.description}
+                  </Typography>
+                  {exp.totalInstallments > 1 && (
+                    <Chip
+                      label={`${exp.installment}/${exp.totalInstallments} parcelas`}
+                      size="small"
+                      color="info"
+                      sx={{ mt: 0.5, fontSize: 10 }}
+                    />
                   )}
                 </TableCell>
-                <TableCell>{exp.category?.name || '-'}</TableCell>
-                <TableCell>R$ {exp.amount.toFixed(2)}</TableCell>
+                <TableCell>
+                  <Chip label={exp.category?.name || '-'} size="small" variant="outlined" />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" fontWeight={600}>
+                    R$ {exp.amount.toFixed(2)}
+                  </Typography>
+                </TableCell>
                 <TableCell>{new Date(exp.dueDate).toLocaleDateString('pt-BR')}</TableCell>
                 <TableCell>
                   <Tooltip title="Anexar comprovante">
@@ -280,9 +328,12 @@ export default function Expenses() {
                     }} />
                 </TableCell>
                 <TableCell>
-                  <Chip label={exp.status === 'PAID' ? 'Pago' : exp.status === 'OVERDUE' ? 'Vencido' : 'Pendente'}
+                  <Chip
+                    label={exp.status === 'PAID' ? 'Pago' : exp.status === 'OVERDUE' ? 'Vencido' : 'Pendente'}
                     color={exp.status === 'PAID' ? 'success' : exp.status === 'OVERDUE' ? 'error' : 'warning'}
-                    size="small" sx={{ fontSize: 11 }} />
+                    size="small"
+                    sx={{ fontSize: 11 }}
+                  />
                 </TableCell>
                 <TableCell>
                   {exp.status !== 'PAID' && (
@@ -308,7 +359,7 @@ export default function Expenses() {
             {filteredExpenses.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} align="center">
-                  <Typography color="textSecondary" sx={{ py: 4 }}>Nenhuma despesa</Typography>
+                  <Typography color="textSecondary" sx={{ py: 4 }}>Nenhuma despesa encontrada</Typography>
                 </TableCell>
               </TableRow>
             )}
@@ -316,15 +367,14 @@ export default function Expenses() {
         </Table>
       </Card>
 
+      {/* Modal Nova/Editar Despesa */}
       <Dialog open={showForm} onClose={closeModal} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontSize: 16, fontWeight: 600 }}>
-          {editingId ? '✏️ Editar Despesa' : '💰 Nova Despesa'}
-        </DialogTitle>
+        <DialogTitle>{editingId ? '✏️ Editar Despesa' : '💰 Nova Despesa'}</DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
             <Grid container spacing={2}>
               <Grid item xs={12}>
-                <TextField fullWidth label="Descrição" size="small" value={description} onChange={e => setDescription(e.target.value)} required autoFocus />
+                <TextField fullWidth label="Descrição" size="small" value={description} onChange={e => setDescription(e.target.value)} required />
                 <Button onClick={suggestCategory} sx={{ mt: 1 }} variant="outlined" size="small" color="secondary" disabled={!description}>
                   🤖 Sugerir Categoria
                 </Button>
@@ -335,7 +385,7 @@ export default function Expenses() {
                 )}
               </Grid>
               <Grid item xs={6}>
-                <TextField fullWidth label="Valor R$" type="number" size="small" value={amount} onChange={e => setAmount(e.target.value)} required inputProps={{ step: "0.01", min: "0" }} />
+                <TextField fullWidth label="Valor R$" type="number" size="small" value={amount} onChange={e => setAmount(e.target.value)} required />
               </Grid>
               <Grid item xs={6}>
                 <TextField fullWidth label="Vencimento" type="date" size="small" value={dueDate} onChange={e => setDueDate(e.target.value)} required InputLabelProps={{ shrink: true }} />
@@ -346,59 +396,40 @@ export default function Expenses() {
                   {categories.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
                 </Select>
               </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth label="Observações" size="small" value={notes} onChange={e => setNotes(e.target.value)} multiline rows={2} />
+              </Grid>
+              {!editingId && (
+                <>
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      control={<Switch checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />}
+                      label="🔁 Despesa recorrente mensal"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth label="Parcelas" type="number" size="small"
+                      value={installments}
+                      onChange={e => setInstallments(Number(e.target.value))}
+                      inputProps={{ min: 1, max: 36 }}
+                      helperText={installments > 1 ? `Serão criadas ${installments} parcelas automaticamente` : 'Deixe 1 para não parcelar'}
+                    />
+                  </Grid>
+                </>
+              )}
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={closeModal} size="small">Cancelar</Button>
-            <Button type="submit" variant="contained" size="small" disabled={!categoryId || !description || !amount || !dueDate}>
+            <Button onClick={closeModal}>Cancelar</Button>
+            <Button type="submit" variant="contained" sx={{ bgcolor: '#00A896' }}>
               {editingId ? 'Atualizar' : 'Salvar'}
             </Button>
           </DialogActions>
         </form>
       </Dialog>
 
-      <Dialog open={showInvoices} onClose={() => setShowInvoices(false)} maxWidth="md" fullWidth>
-        <DialogTitle>🤖 Notas Fiscais Encontradas</DialogTitle>
-        <DialogContent>
-          {invoices.length === 0 ? (
-            <Typography color="textSecondary" sx={{ py: 4, textAlign: 'center' }}>
-              Nenhuma nota encontrada
-            </Typography>
-          ) : (
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox">✓</TableCell>
-                  <TableCell>Descrição</TableCell>
-                  <TableCell>Categoria</TableCell>
-                  <TableCell>Valor</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {invoices.map((inv, i) => (
-                  <TableRow key={i}>
-                    <TableCell padding="checkbox">
-                      <Checkbox checked={selectedInvoices.includes(i)} onChange={() => toggleInvoice(i)} />
-                    </TableCell>
-                    <TableCell>{inv.description}</TableCell>
-                    <TableCell><Chip label={inv.categoryName} size="small" /></TableCell>
-                    <TableCell>R$ {inv.amount.toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowInvoices(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={importInvoices} disabled={selectedInvoices.length === 0}>
-            Importar {selectedInvoices.length}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} message={snackbar.message}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} />
+      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} message={snackbar.message} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} />
     </Box>
   );
 }
