@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { 
-  Typography, Card, CardContent, Grid, TextField, Button, Box, Chip, 
-  Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Table, 
+import {
+  Typography, Card, CardContent, Grid, TextField, Button, Box, Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Table,
   TableBody, TableCell, TableHead, TableRow, Avatar
 } from '@mui/material';
-import { Add, HowToVote, CheckCircle, Cancel, People, Download } from '@mui/icons-material';
+import { Add, HowToVote, CheckCircle, Cancel, People, Download, Edit } from '@mui/icons-material';
 
 export default function Assemblies() {
   const [assemblies, setAssemblies] = useState<any[]>([]);
@@ -18,12 +18,16 @@ export default function Assemblies() {
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
 
+  const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3333'
+    : 'https://condpro.onrender.com';
+
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     const [assRes, pendRes] = await Promise.all([
       api.get('/assemblies'),
-      api.get('/assemblies/pending')
+      api.get('/assemblies/pending'),
     ]);
     setAssemblies(assRes.data);
     setPending(pendRes.data);
@@ -32,8 +36,9 @@ export default function Assemblies() {
   async function createAssembly(e: React.FormEvent) {
     e.preventDefault();
     await api.post('/assemblies', { title, description, date, location });
-    setSnackbar({ open: true, message: 'Assembleia criada! Moradores notificados.', severity: 'success' });
-    setShowForm(false); setTitle(''); setDescription(''); setDate(''); setLocation('');
+    setSnackbar({ open: true, message: 'Assembleia criada!', severity: 'success' });
+    setShowForm(false);
+    setTitle(''); setDescription(''); setDate(''); setLocation('');
     loadData();
   }
 
@@ -47,9 +52,15 @@ export default function Assemblies() {
     setShowPresence({ assemblyId, list: data });
   }
 
-  // ✅ NOVO: Função para baixar PDF da ata
-  function downloadPdf(assemblyId: string, title: string) {
-    window.open(`http://192.168.0.3:3333/assemblies/${assemblyId}/pdf`, '_blank');
+  function downloadPdf(assemblyId: string) {
+    window.open(`${API_URL}/assemblies/${assemblyId}/pdf`, '_blank');
+  }
+
+  async function finishAssembly(assemblyId: string) {
+    if (!confirm('Finalizar esta assembleia? Os moradores poderão assinar a ata.')) return;
+    await api.post(`/assemblies/${assemblyId}/finish`);
+    setSnackbar({ open: true, message: '✅ Assembleia finalizada! Ata pronta para assinatura.', severity: 'success' });
+    loadData();
   }
 
   return (
@@ -57,16 +68,21 @@ export default function Assemblies() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography variant="h6" fontWeight={700}>🗳️ Assembleias</Typography>
-          <Typography variant="caption" color="textSecondary">{pending.length} confirmação(ões) pendente(s)</Typography>
+          <Typography variant="caption" color="textSecondary">
+            {pending.length} confirmação(ões) pendente(s)
+          </Typography>
         </Box>
-        <Button variant="contained" size="small" startIcon={<Add />} onClick={() => setShowForm(true)}>Nova Assembleia</Button>
+        <Button variant="contained" size="small" startIcon={<Add />} onClick={() => setShowForm(true)}>
+          Nova Assembleia
+        </Button>
       </Box>
 
-      {/* Pending confirmations */}
       {pending.length > 0 && (
         <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid #F0A500' }}>
           <CardContent>
-            <Typography variant="subtitle1" fontWeight={600} color="#F0A500" mb={2}>📋 Confirme sua Presença</Typography>
+            <Typography variant="subtitle1" fontWeight={600} color="#F0A500" mb={2}>
+              📋 Confirme sua Presença
+            </Typography>
             {pending.map(p => (
               <Box key={p.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, borderBottom: '1px solid #F0F0F0' }}>
                 <Box>
@@ -74,8 +90,12 @@ export default function Assemblies() {
                   <Typography variant="caption">{new Date(p.assembly?.date).toLocaleDateString('pt-BR')} • {p.assembly?.location}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button size="small" color="success" variant="contained" startIcon={<CheckCircle />} onClick={() => confirmPresence(p.assemblyId, 'PRESENT')}>Presente</Button>
-                  <Button size="small" color="error" variant="outlined" startIcon={<Cancel />} onClick={() => confirmPresence(p.assemblyId, 'ABSENT')}>Ausente</Button>
+                  <Button size="small" color="success" variant="contained" startIcon={<CheckCircle />} onClick={() => confirmPresence(p.assemblyId, 'PRESENT')}>
+                    Presente
+                  </Button>
+                  <Button size="small" color="error" variant="outlined" startIcon={<Cancel />} onClick={() => confirmPresence(p.assemblyId, 'ABSENT')}>
+                    Ausente
+                  </Button>
                 </Box>
               </Box>
             ))}
@@ -83,7 +103,6 @@ export default function Assemblies() {
         </Card>
       )}
 
-      {/* Lista de assembleias */}
       <Grid container spacing={2}>
         {assemblies.map(ass => (
           <Grid item xs={12} md={6} key={ass.id}>
@@ -91,29 +110,31 @@ export default function Assemblies() {
               <CardContent>
                 <Box display="flex" justifyContent="space-between" mb={1}>
                   <Typography fontWeight={600}>{ass.title}</Typography>
-                  <Chip label={ass.status} size="small" color={ass.status === 'SCHEDULED' ? 'primary' : ass.status === 'ONGOING' ? 'warning' : 'success'} />
+                  <Chip
+                    label={ass.status}
+                    size="small"
+                    color={ass.status === 'SCHEDULED' ? 'primary' : ass.status === 'FINISHED' ? 'success' : 'warning'}
+                  />
                 </Box>
                 <Typography variant="body2" color="textSecondary">{ass.description}</Typography>
                 <Typography variant="caption" display="block" mt={1}>
-                  📅 {new Date(ass.date).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })} • 📍 {ass.location || 'Salão de Festas'}
+                  📅 {new Date(ass.date).toLocaleDateString('pt-BR')} • 📍 {ass.location || 'Salão de Festas'}
                 </Typography>
                 <Box mt={2} display="flex" gap={2} flexWrap="wrap">
                   <Chip icon={<People />} label={`${ass.confirmations?.filter((c: any) => c.status === 'PRESENT').length || 0} presentes`} size="small" color="success" variant="outlined" />
                   <Chip icon={<Cancel />} label={`${ass.confirmations?.filter((c: any) => c.status === 'ABSENT').length || 0} ausentes`} size="small" color="error" variant="outlined" />
                   <Chip label={`${ass.confirmations?.filter((c: any) => c.status === 'PENDING').length || 0} pendentes`} size="small" variant="outlined" />
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                  <Button size="small" onClick={() => loadPresenceList(ass.id)}>Ver Lista de Presença</Button>
-                  {/* ✅ NOVO: Botão Download PDF */}
-                  <Button 
-                    size="small" 
-                    startIcon={<Download />}
-                    onClick={() => downloadPdf(ass.id, ass.title)}
-                    color="secondary"
-                    variant="outlined"
-                  >
-                    📄 Baixar Ata PDF
+                <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+                  <Button size="small" onClick={() => loadPresenceList(ass.id)}>Ver Lista</Button>
+                  <Button size="small" startIcon={<Download />} onClick={() => downloadPdf(ass.id)} color="secondary" variant="outlined">
+                    📄 Ata PDF
                   </Button>
+                  {ass.status !== 'FINISHED' && (
+                    <Button size="small" startIcon={<Edit />} onClick={() => finishAssembly(ass.id)} color="warning" variant="outlined">
+                      ✍️ Finalizar
+                    </Button>
+                  )}
                 </Box>
               </CardContent>
             </Card>
@@ -133,7 +154,10 @@ export default function Assemblies() {
               <Grid item xs={6}><TextField fullWidth label="Local" size="small" value={location} onChange={e => setLocation(e.target.value)} placeholder="Salão de festas" /></Grid>
             </Grid>
           </DialogContent>
-          <DialogActions><Button onClick={() => setShowForm(false)}>Cancelar</Button><Button type="submit" variant="contained">Criar e Notificar</Button></DialogActions>
+          <DialogActions>
+            <Button onClick={() => setShowForm(false)}>Cancelar</Button>
+            <Button type="submit" variant="contained">Criar</Button>
+          </DialogActions>
         </form>
       </Dialog>
 
@@ -142,7 +166,13 @@ export default function Assemblies() {
         <DialogTitle>📋 Lista de Presença</DialogTitle>
         <DialogContent>
           <Table size="small">
-            <TableHead><TableRow><TableCell>Morador</TableCell><TableCell>Unidade</TableCell><TableCell>Status</TableCell></TableRow></TableHead>
+            <TableHead>
+              <TableRow>
+                <TableCell>Morador</TableCell>
+                <TableCell>Unidade</TableCell>
+                <TableCell>Status</TableCell>
+              </TableRow>
+            </TableHead>
             <TableBody>
               {showPresence?.list?.map((c: any) => (
                 <TableRow key={c.id}>
@@ -154,10 +184,10 @@ export default function Assemblies() {
                   </TableCell>
                   <TableCell>{c.person?.unit?.number || '-'}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={c.status === 'PRESENT' ? '✅ Presente' : c.status === 'ABSENT' ? '❌ Ausente' : '⏳ Pendente'} 
-                      size="small" 
-                      color={c.status === 'PRESENT' ? 'success' : c.status === 'ABSENT' ? 'error' : 'default'} 
+                    <Chip
+                      label={c.status === 'PRESENT' ? '✅ Presente' : c.status === 'ABSENT' ? '❌ Ausente' : '⏳ Pendente'}
+                      size="small"
+                      color={c.status === 'PRESENT' ? 'success' : c.status === 'ABSENT' ? 'error' : 'default'}
                     />
                   </TableCell>
                 </TableRow>
