@@ -28,9 +28,11 @@ export default function Layout() {
   
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifications, setNotifications] = useState({ packages: 0, maintenance: 0, overdueExpenses: 0, total: 0 });
+  const [condominiumName, setCondominiumName] = useState<string>('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [bottomTab, setBottomTab] = useState(0);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  
 
   const getProfile = (r: string | null): 'admin' | 'resident' | 'staff' => {
     if (r === 'SYNDIC' || r === 'ADMIN') return 'admin';
@@ -41,9 +43,19 @@ export default function Layout() {
 
   useEffect(() => {
     loadNotifications();
+    loadCondominium(); // ✅ NOVO
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
+  
+  async function loadCondominium() {
+  try {
+    const { data } = await api.get('/condominium/me');
+    if (data?.name) {
+      setCondominiumName(data.name);
+    }
+  } catch (error) {}
+}
 
   async function loadNotifications() {
     try { const { data } = await api.get('/notifications'); setNotifications(data); } catch (error) {}
@@ -147,7 +159,7 @@ export default function Layout() {
       <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Box sx={{ bgcolor: '#00A896', borderRadius: 2, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'white', flexShrink: 0 }}>🏢</Box>
         <Box>
-          <Typography sx={{ fontWeight: 700, fontSize: 16, color: '#1A1A2E', lineHeight: 1.2 }}>CondoPro</Typography>
+          <Typography sx={{ fontWeight: 700, fontSize: 16, color: '#1A1A2E', lineHeight: 1.2 }}> {condominiumName || 'CondoPro'}</Typography>
           <Typography sx={{ fontSize: 10, color: '#00A896', fontWeight: 600, letterSpacing: 0.5 }}>GESTÃO PROFISSIONAL</Typography>
         </Box>
       </Box>
