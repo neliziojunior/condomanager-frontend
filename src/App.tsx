@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import SetupCondominium from './pages/SetupCondominium';
 import Dashboard from './pages/Dashboard';
+import ResidentDashboard from './pages/ResidentDashboard';
 import Transparency from './pages/Transparency';
 import Expenses from './pages/Expenses';
 import EmployeeExpenses from './pages/EmployeeExpenses';
@@ -30,6 +31,24 @@ import Charges from './pages/Charges';
 import Reconciliation from './pages/Reconciliation';
 import Layout from './components/Layout';
 
+// ✅ Decide qual dashboard mostrar baseado no perfil
+function DashboardRouter() {
+  const { role } = useAuth();
+  if (role === 'RESIDENT' || role === 'OWNER') {
+    return <ResidentDashboard />;
+  }
+  return <Dashboard />;
+}
+
+// ✅ Protege a rota de transparência (só moradores)
+function TransparencyRouter() {
+  const { role } = useAuth();
+  if (role === 'RESIDENT' || role === 'OWNER') {
+    return <Transparency />;
+  }
+  return <Navigate to="/dashboard" replace />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -39,8 +58,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<SetupCondominium />} />
           <Route element={<Layout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/transparency" element={<Transparency />} />
+            <Route path="/dashboard" element={<DashboardRouter />} />
+            <Route path="/transparency" element={<TransparencyRouter />} />
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/employee-expenses" element={<EmployeeExpenses />} />
             <Route path="/employees" element={<Employees />} />

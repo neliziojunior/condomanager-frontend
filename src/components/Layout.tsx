@@ -57,7 +57,6 @@ export default function Layout() {
     admin: [
       { key: 'dashboard', label: '📊 Dashboard', icon: <Dashboard />, items: [
         { text: 'Visão Geral', icon: <Dashboard />, path: '/dashboard' },
-        { text: 'Transparência', icon: <Visibility />, path: '/transparency' },
       ]},
       { key: 'gestao', label: '🏢 Gestão', icon: <Apartment />, items: [
         { text: 'Unidades', icon: <Apartment />, path: '/units' },
@@ -93,7 +92,7 @@ export default function Layout() {
     ],
     resident: [
       { key: 'dashboard', label: '📊 Dashboard', icon: <Dashboard />, items: [
-        { text: 'Visão Geral', icon: <Dashboard />, path: '/dashboard' },
+        { text: 'Início', icon: <Dashboard />, path: '/dashboard' },
         { text: 'Transparência', icon: <Visibility />, path: '/transparency' },
       ]},
       { key: 'conveniencia', label: '🏠 Conveniência', icon: <Home />, items: [
