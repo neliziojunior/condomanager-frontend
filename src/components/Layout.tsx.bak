@@ -81,7 +81,6 @@ export default function Layout() {
         { text: 'Folha de Pagamento', icon: <Calculate />, path: '/payroll' },
         { text: 'Cobranças', icon: <Receipt />, path: '/charges' },
         { text: 'Conciliação IA', icon: <AutoAwesome />, path: '/reconciliation' },
-        { text: 'Prestação de Contas', icon: <Description />, path: '/reports' },
         { text: 'Contabilidade', icon: <AccountBalance />, path: '/accounting' },
       ]},
       { key: 'social', label: '👥 Social', icon: <Campaign />, items: [
