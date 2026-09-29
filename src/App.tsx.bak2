@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Landing from './pages/Landing';
 import Login from './pages/Login';
 import SetupCondominium from './pages/SetupCondominium';
 import Dashboard from './pages/Dashboard';
@@ -56,7 +55,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<SetupCondominium />} />
           <Route element={<Layout />}>
